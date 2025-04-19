@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.env
+.venv
+.envrc
+.mypy_cache/
+.idea/
+.vscode/
+.DS_Store
+test.md
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+# Jupyter
+.ipynb_checkpoints/
+# OS
+Thumbs.db
+ehthumbs.db

@@ -1,0 +1,7 @@
+# すべてのテキストファイルをLFで管理
+* text=auto eol=lf
+
+# バイナリや画像は自動変換しない
+*.png binary
+*.jpg binary
+*.gif binary
