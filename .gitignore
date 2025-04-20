@@ -11,6 +11,7 @@ test.md
 # Python build artifacts
 build/
 dist/
+sandbox/
 *.egg-info/
 # Jupyter
 .ipynb_checkpoints/

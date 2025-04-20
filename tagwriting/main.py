@@ -125,10 +125,10 @@ class ConsoleClient:
     def __init__(self):
         self.console = Console()
 
-    def start(self, filename, templates):
+    def start(self, dirpath, templates):
         self.console.rule("[bold blue]Tagwriting CLI[/bold blue]")
         self.console.print("[bold magenta]Hello, Tagwriting CLI![/bold magenta] :sparkles:", justify="center")
-   
+        
         # Default templates param
         if templates is None:
             templates = {
@@ -137,34 +137,33 @@ class ConsoleClient:
             }
         self.templates = templates
 
-        filepath = os.path.abspath(filename)
-        if not os.path.isfile(filepath):
-            self.console.print(f"[red]ファイルが存在しません: {filepath}[/red]")
+        # use absolute path
+        dirpath = os.path.abspath(dirpath)
+
+        if not os.path.exists(dirpath):
+            self.console.print(f"[red]ディフェクトリが存在しません: {dirpath}[/red]")
             return
-        self.filepath = filepath
-
-        self.text_manager = TextManger(filepath, templates)
+        self.dirpath = dirpath
         self.inloop()
-
-    def show_file(self):
-        self.console.rule(f"[bold yellow]ファイル更新: {os.path.basename(self.filepath)}[/bold yellow]")
         
-    def on_change(self):
-        self.show_file()
-        result = self.text_manager.extract_prompt_tag()
+    def on_change(self, filepath):
+        self.console.rule(f"[bold yellow]ファイル更新: {os.path.basename(filepath)}[/bold yellow]")
+        text_manager = TextManger(filepath, self.templates)
+        result = text_manager.extract_prompt_tag()
         if result is not None:
             prompt, response = result
             self.console.print(f"[bold green]Prompt:[/bold green] {prompt}")
             self.console.print(f"[bold green]Response:[/bold green] {response}")
 
     def inloop(self):
-        event_handler = FileChangeHandler(self.filepath, self.on_change)
-
+        self.console.print(f"[green]Start clients... [/green]", justify="center")
+        event_handler = FileChangeHandler(self.dirpath, self.on_change)
         observer = Observer()
-        observer.schedule(event_handler, path=os.path.dirname(self.filepath) or '.', recursive=False)
+        observer.schedule(event_handler, path=os.path.dirname(self.dirpath), recursive=True)
         observer.start()
+        self.console.print(f"[green]Watching >>> {self.dirpath}[/green]", justify="center")
+        self.console.print(f"[blue] exit: Ctrl+C[/blue]", justify="center")
 
-        self.console.print(f"[green]{self.filepath} の変更を監視しています。Ctrl+Cで終了します。[/green]", justify="center")
         try:
             while True:
                 time.sleep(1)
@@ -174,9 +173,9 @@ class ConsoleClient:
 
 
 class FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, filepath, on_change, debounce_interval=2.0):
+    def __init__(self, dirpath, on_change, debounce_interval=2.0):
         super().__init__()
-        self.filepath = os.path.abspath(filepath)
+        self.dirpath = os.path.abspath(dirpath)
         self.on_change = on_change
         self._last_called = 0
         self._debounce_interval = debounce_interval
@@ -188,9 +187,9 @@ class FileChangeHandler(FileSystemEventHandler):
             return True
 
     def on_modified(self, event):
-        if os.path.abspath(event.src_path) == self.filepath:
-            if self._is_debounce():
-                self.on_change()
+        #if self._is_debounce():
+        print("Changed:", event.src_path)
+        self.on_change(event.src_path)
 
 
 def ask_ai(prompt):
@@ -211,15 +210,15 @@ def ask_ai(prompt):
 
 
 @click.command()
-@click.argument('filename')
+@click.argument('dirpath')
 @click.option('--templates', 'yaml_path', default=None, help='Template yaml file path')
-def main(filename, yaml_path):
+def main(dirpath, yaml_path):
     templates = None
     if yaml_path:
         with open(yaml_path, 'r', encoding='utf-8') as f:
             templates = yaml.safe_load(f)
     client = ConsoleClient()
-    client.start(filename, templates)
+    client.start(dirpath, templates)
 
 
 if __name__ == "__main__":
