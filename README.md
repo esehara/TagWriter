@@ -149,9 +149,30 @@ Tagwritingの内部で、以下の流れで動作します。
 
 ## Build-in タグの詳細
 
-### プロンプトタグ(`<prompt></prompt>`)
+### promptタグ(`<prompt></prompt>`)
 
 現時点で一番最後に処理されるタグであり、このプロンプトタグのインナーテキストが、LLMに渡されます。
+
+### includeタグ（`<include>filepath</include>`）
+
+指定したファイルの内容を、LLMのプロンプトに与えるさいに挿入するための特殊タグです。
+
+- 書式： `<include>パス</include>`（例：`<include>foo/bar.txt</include>`）
+- パスは「現在加工しているファイル」からの相対パスで解決されます。
+- includeタグ部分は、該当ファイルの内容で丸ごと置換されます。
+- 複数のincludeタグがある場合もすべて一度に展開されます。
+- **現状の仕様**: 入れ子のinclude（include先にさらにincludeがある場合）は一段階のみ展開されます。
+- **現状の仕様**: include先にある`<prompt></prompt>`は展開されません。
+
+#### 例
+
+```markdown
+# 本文
+<include>foo.md</include>
+<include>bar.md</include>
+```
+
+保存時、`foo.md`や`bar.md`の内容がそれぞれ該当部分に挿入されます。
 
 ## YAMLテンプレートシステム
 

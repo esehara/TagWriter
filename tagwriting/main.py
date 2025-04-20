@@ -93,6 +93,25 @@ class TextManger:
         """
         return response.replace("<prompt>", "").replace("</prompt>", "")
 
+    @classmethod
+    def replace_include_tags(cls, filepath, text):
+        """
+        <include>filepath.md</include> の形式で記述されたタグを、
+        指定ファイルの内容で置換する。
+        パスは現在加工しているファイルからの相対パス。
+        """
+        pattern = r'<include>(.*?)</include>'
+        def replacer(match):
+            rel_path = match.group(1).strip()
+            base_dir = os.path.dirname(filepath)
+            abs_path = os.path.abspath(os.path.join(base_dir, rel_path))
+            try:
+                with open(abs_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            except Exception as e:
+                return f"[include error: {e}]"
+        return re.sub(pattern, replacer, text, flags=re.DOTALL)
+
     def extract_prompt_tag(self):
         self._load_text()
         self._pre_prompt()
@@ -109,12 +128,12 @@ class TextManger:
         if result is None:
             return None
 
-
         tag, prompt = result
         prompt_text = self.text.replace(tag, "@@processing@@")
-        # Prompt 
-        response = ask_ai(self.templates["prompt"].format(prompt=prompt, prompt_text=prompt_text))
 
+        # Prompt 
+        prompt_text = TextManger.replace_include_tags(self.filepath, prompt_text)
+        response = ask_ai(self.templates["prompt"].format(prompt=prompt, prompt_text=prompt_text))
         response = self._safe_text(response)
 
         self.text = self.text.replace(tag, f"{response}")
