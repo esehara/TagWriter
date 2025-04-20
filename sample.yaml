@@ -1,6 +1,17 @@
-- tag: "detail"
-  format: "詳細に説明する: {prompt}"
-- tag: "summary"
-  format: "文章全体を要約する"
-- tag: "profile"
-  format: "人物のプロフィールを生成する。名前以外の各項目は<detail></detail>で囲む: {prompt}"
+prompt: |
+  あなたの回答はcontext内の`@@processing@@`と置換されます。コンテキストの整合性に合わせてテキストを出力してください。
+  Rule:
+   - `@@processing@@`は貴方の解答に含めないでください。
+   - 解説や説明を含めず、UserPromptに直接回答してください。
+  Context:
+  {prompt_text}
+  UserPrompt: 
+  {prompt}
+
+tags:
+  - tag: "detail"
+    format: "詳細に説明する: {prompt}"
+  - tag: "summary"
+    format: "文章全体を要約する"
+  - tag: "profile"
+    format: "人物のプロフィールを生成する。名前以外の各項目は<detail></detail>で囲む: {prompt}"

@@ -43,23 +43,22 @@ class TextManger:
         return None
 
     def _pre_prompt(self):
-        for tag in self.templates:
+        """
+        Simple replace for tags:
+            example: tag = {"tag":"summary", "format":"summarize: {prompt}"}
+            "<summary>adabracatabra</summary>" -> "<prompt>summarize: adabracatabra</prompt>"
+
+        First Template Only:
+            -> "<summary>adabracatabra</summary> <summary> foobar </summary>"
+            -> "<prompt>summarize: adabracatabra</prompt> <summary> foobar </summary>"
+        """
+        for tag in self.templates["tags"]:
             result = TextManger.extract_tag_contents(tag['tag'], self.text)
             if result is not None:
                 tags, prompt = result
-                """
-                Simple replace for tags:
-                  example: tag = {"tag":"summary", "format":"summarize: {prompt}"}
-                  "<summary>adabracatabra</summary>" -> "<prompt>summarize: adabracatabra</prompt>"
-                """
                 replace_tags = f"<prompt>{tag['format']}</prompt>".format(prompt=prompt)
                 self.text = self.text.replace(tags, replace_tags)
                 self._save_text()
-                """
-                First Template Only:
-                  -> "<summary>adabracatabra</summary> <summary> foobar </summary>"
-                  -> "<prompt>summarize: adabracatabra</prompt> <summary> foobar </summary>"
-                """
                 return
 
     def _load_text(self):
@@ -93,26 +92,17 @@ class TextManger:
           -> "TagWriting is awesome! (this is AI response)"
         """
         result  = TextManger.extract_tag_contents('prompt', self.text)
-
-        """
-        <prompt> tag is not found:
-          -> stop process
-        """
+        
+        #<prompt> tag is not found:
+        #  -> stop process
         if result is None:
             return None
 
 
         tag, prompt = result
         prompt_text = self.text.replace(tag, "@@processing@@")
-        response = ask_ai(f"""
-        あなたの回答は`@@processing@@`と置換されます。コンテキストの整合性に合わせてテキストを出力してください。
-        Rule:
-          - `@@processing@@`は貴方の解答に含めないでください。
-          - 解説や説明を含めず、UserPromptに直接回答してください。
-        Context:
-        {prompt_text}
-        UserPrompt: 
-        {prompt}""")
+        # Prompt 
+        response = ask_ai(self.templates["prompt"].format(prompt=prompt, prompt_text=prompt_text))
 
         response = self._safe_text(response)
 
