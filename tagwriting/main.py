@@ -134,32 +134,35 @@ class TextManager:
         return rules
 
     def extract_prompt_tag(self):
-        self._load_text()
-        self._pre_prompt()
-        """
-        Process:
-          -> "<prompt>Do you think this product?</prompt>" 
-          -> "@@processing@@" 
-          -> "TagWriting is awesome! (this is AI response)"
-        """
-        result  = TextManager.extract_tag_contents('prompt', self.text)
-        #<prompt> tag is not found:
-        #  -> stop process
-        if result is None:
+        try:
+            self._load_text()
+            self._pre_prompt()
+            """
+            Process:
+              -> "<prompt>Do you think this product?</prompt>" 
+              -> "@@processing@@" 
+              -> "TagWriting is awesome! (this is AI response)"
+            """
+            result  = TextManager.extract_tag_contents('prompt', self.text)
+            #<prompt> tag is not found:
+            #  -> stop process
+            if result is None:
+                return None
+
+            tag, prompt, attrs = result
+            prompt_text = self.text.replace(tag, "@@processing@@")
+            prompt_text = TextManager.replace_include_tags(self.filepath, prompt_text)
+            attrs_rules = self._build_attrs_rules(attrs)
+            response = ask_ai(self.templates["prompt"].format(
+                prompt=prompt, prompt_text=prompt_text, attrs_rules=attrs_rules))
+            response = TextManager.safe_text(response)
+
+            self.text = self.text.replace(tag, f"{response}")
+            self._save_text()
+            return (prompt, response)
+        except Exception as e:
+            print(f"[red][Error]: {e}")
             return None
-
-        tag, prompt, attrs = result
-        prompt_text = self.text.replace(tag, "@@processing@@")
-
-        prompt_text = TextManager.replace_include_tags(self.filepath, prompt_text)
-        attrs_rules = self._build_attrs_rules(attrs)
-        response = ask_ai(self.templates["prompt"].format(
-            prompt=prompt, prompt_text=prompt_text, attrs_rules=attrs_rules))
-        response = TextManager.safe_text(response)
-
-        self.text = self.text.replace(tag, f"{response}")
-        self._save_text()
-        return (prompt, response)
 
 
 class ConsoleClient:

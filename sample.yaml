@@ -10,7 +10,7 @@ prompt: |
   {prompt}
 
 attrs:
-  funny: "面白おかしいトーンで出力する"
+  bullet: "箇条書きで出力する"
 
 ignore:
   - "*.py"
