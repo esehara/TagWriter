@@ -122,10 +122,12 @@ class TextManager:
         return re.sub(pattern, replacer, text, flags=re.DOTALL)
 
     def _build_attrs_rules(self, attrs):
-        # self.templates["attrs"] dicts -> str
         rules = ""
         for attr in attrs:
-            rules += f" - {self.templates['attrs'][attr]}\n"
+            if attr in self.templates["attrs"]:
+                rules += f" - {self.templates['attrs'][attr]}\n"
+            else:
+                print(f"[red][bold][Warning][/bold] Attribute rule not defined: '{attr}'[/red]")
         return rules
 
     def extract_prompt_tag(self):
