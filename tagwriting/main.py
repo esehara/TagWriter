@@ -25,20 +25,36 @@ class TextManger:
             templates = []
         self.templates = templates
 
-    def extract_tag_contents(self, tag_name):
+    @classmethod
+    def extract_tag_contents(cls, tag_name, text):
         """
-        指定したタグ名で囲まれた最初の部分のテキストを抽出する。
-        例: <prompt>内容</prompt> → "内容"
+        get tag and inner text.
+          example: <prompt>内容</prompt> → "内容"
+        recursive process:
+          example: <prompt>summarize: <prompt> Python language </prompt></prompt>
+            -> <prompt>Python language</prompt> -> "Python language"
         """
-        pattern = fr'<{tag_name}>(.*?)</{tag_name}>'
-        match_tag =  re.search(pattern, self.text, flags=re.DOTALL)
+        pattern = fr'<{tag_name}>((?:(?!<{tag_name}>).)*?)</{tag_name}>'
+        match_tag =  re.search(pattern, text, flags=re.DOTALL)
         if match_tag:
-            return (match_tag.group(0), match_tag.group(1))
+            # match_tag.group(0) -> tag (<process>foobar</process>)
+            # match_tag.group(1) -> inner text (foobar)
+            return (match_tag.group(0), match_tag.group(1)) 
         return None
+
+    @classmethod
+    def extract_innermost_process_tags(cls, text):
+        """
+        <process>タグのうち、最も内側のものだけを抽出する関数。
+        例: <process><process>ほげ</process></process> -> ['ほげ']
+        """
+        import re
+        pattern = r"<process></process>"
+        return re.findall(pattern, text, re.DOTALL)
 
     def _pre_prompt(self):
         for tag in self.templates:
-            result = self.extract_tag_contents(tag['tag'])
+            result = TextManger.extract_tag_contents(tag['tag'], self.text)
             if result is not None:
                 tags, prompt = result
                 """
@@ -86,9 +102,16 @@ class TextManger:
           -> "@@processing@@" 
           -> "TagWriting is awesome! (this is AI response)"
         """
-        result  = self.extract_tag_contents('prompt')
+        result  = TextManger.extract_tag_contents('prompt', self.text)
+
+        """
+        <prompt> tag is not found:
+          -> stop process
+        """
         if result is None:
             return None
+
+
         tag, prompt = result
         prompt_text = self.text.replace(tag, "@@processing@@")
         response = ask_ai(f"""
