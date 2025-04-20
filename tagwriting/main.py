@@ -178,6 +178,61 @@ class TextManager:
             print(f"[url error: {e}]")
             return text
 
+    def replace_wikipedia_tags(self, text):
+        """
+        <wikipedia>記事タイトル</wikipedia> の形式で記述されたタグを、
+        Wikipedia APIから取得した記事本文で置換する。
+
+        - API取得失敗時は「[wikipedia error: ...]」で置換
+        - 取得済みタイトルはキャッシュ（self.url_catch）
+        - 記事タイトルはタグ内テキストをそのまま使う
+        - 日本語Wikipediaを利用
+        """
+        verbose_print("[debug][Process] Replacing Wikipedia tags...")
+        pattern = r'<wikipedia>(.*?)</wikipedia>'
+        def replacer(match):
+            title = match.group(1).strip()
+            verbose_print(f"[debug] Wikipedia title found: {title}")
+            cache_key = f"wikipedia:{title}"
+            if cache_key in self.url_catch:
+                verbose_print(f"[debug] Wikipedia cached: {title}")
+                return self.url_catch[cache_key]
+            try:
+                # Wikipedia API: 
+                #   -> https://ja.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&format=json&titles=タイトル
+                api = "https://ja.wikipedia.org/w/api.php"
+                params = {
+                    "action": "query",
+                    "prop": "extracts",
+                    "explaintext": True,
+                    "format": "json",
+                    "titles": title,
+                }
+                response = requests.get(api, params=params, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    pages = data.get("query", {}).get("pages", {})
+                    if not pages:
+                        raise Exception("No pages found")
+                    # ページIDは動的なので最初の値を取る
+                    page = next(iter(pages.values()))
+                    extract = page.get("extract", "")
+                    if extract:
+                        self.url_catch[cache_key] = extract.strip()
+                        return extract.strip()
+                    else:
+                        raise Exception("No extract found")
+                else:
+                    raise Exception(f"status_code={response.status_code}")
+            except Exception as e:
+                print(f"[wikipedia error: {e}]")
+                # エラー時はタグそのまま返す
+                return match.group(0)
+        try:
+            return re.sub(pattern, replacer, text, flags=re.DOTALL)
+        except Exception as e:
+            print(f"[wikipedia error: {e}]")
+            return text
 
     def _build_attrs_rules(self, attrs):
         rules = ""
@@ -215,6 +270,7 @@ class TextManager:
 
             # urlはincludeのあとに処理を行う。何が含まれているかわからないから。
             prompt_text = self.replace_url_tags(prompt_text)
+            prompt_text = self.replace_wikipedia_tags(prompt_text)
             response = ask_ai(self.templates["prompt"].format(
                 prompt=prompt, prompt_text=prompt_text, attrs_rules=attrs_rules))
             # responseがNoneのときは、中断

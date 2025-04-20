@@ -14,7 +14,8 @@ dependencies = [
     "watchdog",
     "openai",
     "python-dotenv",
-    "pyyaml"
+    "pyyaml",
+    "requests"
 ]
 
 [project.scripts]
