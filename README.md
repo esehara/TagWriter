@@ -129,3 +129,62 @@ TagWritingは現在、試験的に開発中です。
 - 最小インタフェース：UIに依存せず、あらゆるツールと併用可能
 
 ---
+
+# 詳細な使い方
+
+## YAMLテンプレートシステムについて
+
+Tagwritingでは、YAMLファイルによるテンプレートシステムをサポートしています。これにより、独自のタグやプロンプトのフォーマットを柔軟に定義できます。
+
+### 使い方
+
+1. テンプレート用のYAMLファイルを作成します（例: `sample.yaml`）。
+
+```yaml
+- tag: summary
+  format: 文章全体を要約する
+- tag: detail
+  format: 詳細に説明する: {prompt}
+```
+
+2. コマンドラインで`--templates`オプションを使い、テンプレートYAMLファイルを指定します。
+
+```sh
+python tagwriting/main.py test.md --templates sample.yaml
+```
+
+### テンプレートの書式
+
+- `tag`: Markdown内で変換対象となるタグ名（例: `<summary>...</summary>`）。
+- `format`: 変換後のプロンプトのフォーマット。`{prompt}`の部分がタグ内のテキストで置換されます。
+
+#### 例
+
+Markdownファイル内の
+
+```markdown
+<detail>この物語について説明してください。</detail>
+```
+
+はテンプレートに従って
+
+```markdown
+<prompt>詳細に説明する: この物語について説明してください。</prompt>
+```
+
+に自動変換されます。その後、LLMへの処理が行われます。
+
+# 詳しい挙動の仕様
+
+Tagwritingの内部で、以下の流れで動作します。
+
+1. ファイルの監視
+2. ファイルの変更を検知
+3. ファイルを読み込む
+4. イベントの発火
+5. テンプレートタグの検出(`example: <summary></summary>`)
+6. テンプレートタグをプロンプトタグに変換(`example: <prompt>文章の全体を要約して</prompt>`)
+7. プロンプトの検出(`example: <prompt>文章の全体を要約して</prompt>`)
+8. プロンプトの変換とマーキング(`example: @@prompt@@`)
+9. 変換結果をファイルに書き込む(`example: Tagwritingは素晴らしいプロダクトです)
+10. ファイルの監視を再開
