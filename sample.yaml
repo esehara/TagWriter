@@ -12,6 +12,10 @@ prompt: |
 attrs:
   bullet: "箇条書きで出力する"
 
+target:
+  - "*.md"
+  - "*.markdown"
+
 ignore:
   - "*.py"
   - "*.yaml"

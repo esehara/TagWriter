@@ -189,9 +189,12 @@ class ConsoleClient:
             templates["ignore"] = []
         if templates["attrs"] is None:
             templates["attrs"] = {}
+        if templates["target"] is None:
+            templates["target"] = []
 
         # change absolute path for ignore file
         templates["ignore"] = [os.path.abspath(p) for p in templates["ignore"]]
+        templates["target"] = [os.path.abspath(p) for p in templates["target"]]
 
         return templates
 
@@ -221,7 +224,7 @@ class ConsoleClient:
 
     def inloop(self):
         self.console.print(f"[green]Start clients... [/green]", justify="center")
-        event_handler = FileChangeHandler(self.dirpath, self.on_change, self.templates["ignore"])
+        event_handler = FileChangeHandler(self.dirpath, self.on_change, self.templates["ignore"], self.templates["target"])
         observer = Observer()
         observer.schedule(event_handler, path=os.path.dirname(self.dirpath), recursive=True)
         observer.start()
@@ -237,23 +240,15 @@ class ConsoleClient:
 
 
 class FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, dirpath, on_change, ignore, debounce_interval=2.0):
-        super().__init__()
-        self.dirpath = os.path.abspath(dirpath)
-        self.on_change = on_change
-        self._last_called = 0
-        self._debounce_interval = debounce_interval
-        self._ignore = ignore
-
-    def _is_debounce(self):
-        now = time.time()
-        if now - self._last_called > self._debounce_interval:
-            self._last_called = now
-            return True
-
-    def is_ignored(self, path):
+    @classmethod
+    def match_patterns(cls, path, patterns):
+        """
+        任意のファイルリスト(patterns)にpathがマッチするか判定
+        - patterns: glob, ディレクトリ、絶対パス対応
+        - patternsが空の場合はFalse（is_target/is_ignored側で適宜True/False返す）
+        """
         path = os.path.abspath(path)
-        for pattern in self._ignore:
+        for pattern in patterns:
             if pattern.endswith(os.sep) or pattern.endswith('/') or pattern.endswith('\\'):
                 dir_pattern = os.path.abspath(pattern.rstrip('/\\'))
                 if os.path.commonpath([path, dir_pattern]) == dir_pattern:
@@ -266,6 +261,29 @@ class FileChangeHandler(FileSystemEventHandler):
                 if path == file_pattern:
                     return True
         return False
+
+    def __init__(self, dirpath, on_change, ignore, target, debounce_interval=2.0):
+        super().__init__()
+        self.dirpath = os.path.abspath(dirpath)
+        self.on_change = on_change
+        self._last_called = 0
+        self._debounce_interval = debounce_interval
+        self._ignore = ignore
+        self._target = target
+
+    def _is_debounce(self):
+        now = time.time()
+        if now - self._last_called > self._debounce_interval:
+            self._last_called = now
+            return True
+
+    def is_ignored(self, path):
+        return self.match_patterns(path, self._ignore)
+
+    def is_target(self, path):
+        if not self._target:
+            return True
+        return self.match_patterns(path, self._target)
 
     def is_text_file(self, path, blocksize=512):
         try:
@@ -283,6 +301,8 @@ class FileChangeHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         if self.is_ignored(event.src_path):
+            return
+        if not self.is_target(event.src_path):
             return
         if not self.is_text_file(event.src_path):
             return

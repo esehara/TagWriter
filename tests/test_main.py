@@ -1,5 +1,6 @@
 import pytest
-from tagwriting.main import TextManager
+from tagwriting.main import TextManager, FileChangeHandler
+import os
 
 def test_extract_tag_contents_no_attr():
     text = "<prompt>foobar</prompt>"
@@ -50,3 +51,32 @@ def test_safe_text_prompt_multi_attr():
 def test_safe_text_nested():
     text = "foo <prompt:funny>bar <prompt>baz</prompt> qux</prompt> end"
     assert TextManager.safe_text(text) == "foo bar baz qux end"
+
+def test_match_patterns_glob():
+    # tests/test_main.py should match '*.py'
+    path = os.path.abspath(__file__)
+    patterns = ['*.py']
+    assert FileChangeHandler.match_patterns(path, patterns)
+    assert FileChangeHandler.match_patterns(os.path.basename(path), patterns)
+
+def test_match_patterns_exact():
+    path = os.path.abspath(__file__)
+    patterns = [path]
+    assert FileChangeHandler.match_patterns(path, patterns)
+
+def test_match_patterns_directory():
+    # Should match if the pattern is the parent directory
+    dir_pattern = os.path.dirname(os.path.abspath(__file__)) + os.sep
+    path = os.path.abspath(__file__)
+    patterns = [dir_pattern]
+    assert FileChangeHandler.match_patterns(path, patterns)
+
+def test_match_patterns_no_match():
+    path = os.path.abspath(__file__)
+    patterns = ['*.md', 'not_a_file.py', '/tmp/']
+    assert not FileChangeHandler.match_patterns(path, patterns)
+
+def test_match_patterns_empty():
+    path = os.path.abspath(__file__)
+    patterns = []
+    assert not FileChangeHandler.match_patterns(path, patterns)
