@@ -177,6 +177,23 @@ Tagwritingの内部で、以下の流れで動作します。
 
 といったようなプロンプトとして、LLMに渡されます。
 
+#### 仕様
+
+promptタグで生成されたテキストは、停止可能性を担保するため、そのprompt内で生成された`<prompt></prompt>`タグを置換します。
+従って、再帰的に`<prompt></prompt>`タグを囲むよう指示したとしても、そのタグは削除されます。
+
+```markdown
+わたしはTagWritingです。
+<prompt>それでは`prompt tag`で、「りんご」を囲ったものを出力してください。</prompt>
+```
+
+```markdown
+わたしはTagWritingです。
+りんご
+```
+
+このとき、仮に`<prompt>りんご</prompt>`と出力されていたとしても、「りんご」としか出力されません。
+
 ### includeタグ（`<include>filepath</include>`）
 
 指定したファイルの内容を、LLMのプロンプトに与えるさいに挿入するための特殊タグです。
