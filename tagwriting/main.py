@@ -10,6 +10,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from pathlib import Path
 import yaml
+import fnmatch
 
 DEFAULT_PROMPT = """
 Your response will replace `@@processing@@` within the context. Please output text consistent with the context's integrity.
@@ -205,8 +206,24 @@ class FileChangeHandler(FileSystemEventHandler):
             self._last_called = now
             return True
 
+    def is_ignored(self, path):
+        path = os.path.abspath(path)
+        for pattern in self._ignore:
+            if pattern.endswith(os.sep) or pattern.endswith('/') or pattern.endswith('\\'):
+                dir_pattern = os.path.abspath(pattern.rstrip('/\\'))
+                if os.path.commonpath([path, dir_pattern]) == dir_pattern:
+                    return True
+            elif any(char in pattern for char in '*?[]'):
+                if fnmatch.fnmatch(path, pattern) or fnmatch.fnmatch(os.path.basename(path), pattern):
+                    return True
+            else:
+                file_pattern = os.path.abspath(pattern)
+                if path == file_pattern:
+                    return True
+        return False
+
     def on_modified(self, event):
-        if event.src_path in self._ignore:
+        if self.is_ignored(event.src_path):
             return
         self.on_change(event.src_path)
 

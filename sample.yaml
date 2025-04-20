@@ -9,10 +9,10 @@ prompt: |
   {prompt}
 
 ignore:
-  - "main.py"
+  - "*.py"
+  - "*.yaml"
   - "README.md"
-  - "sample.yaml"
-  - "./sandbox/test_not_target.md"
+  - "sandbox/test_not_target.md"
 
 tags:
   - tag: "detail"
