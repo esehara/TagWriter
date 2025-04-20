@@ -144,7 +144,7 @@ Tagwritingの内部で、以下の流れで動作します。
 6. テンプレートタグをプロンプトタグに変換(`example: <prompt>文章の全体を要約して</prompt>`)
 7. プロンプトの検出(`example: <prompt>文章の全体を要約して</prompt>`)
 8. プロンプトの変換部分をマーキング(`example: @@prompt@@`)
-9. 結果をファイルに書き込む(`example: Tagwritingは素晴らしいプロダクトです)
+9. 結果をファイルに書き込む(`example: Tagwritingは素晴らしいプロダクトです`)
 10. ファイルの監視を再開
 
 ## YAMLテンプレートシステムについて
