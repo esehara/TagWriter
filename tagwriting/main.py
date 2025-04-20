@@ -241,8 +241,24 @@ class FileChangeHandler(FileSystemEventHandler):
                     return True
         return False
 
+    def is_text_file(self, path, blocksize=512):
+        try:
+            with open(path, 'rb') as f:
+                chunk = f.read(blocksize)
+            # NULLバイトが含まれていればバイナリファイルとみなす
+            if b'\0' in chunk:
+                return False
+            # ASCII範囲外のバイトが多すぎる場合もバイナリとみなす
+            text_characters = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)))
+            nontext = chunk.translate(None, text_characters)
+            return float(len(nontext)) / len(chunk) < 0.30 if chunk else False
+        except Exception:
+            return False
+
     def on_modified(self, event):
         if self.is_ignored(event.src_path):
+            return
+        if not self.is_text_file(event.src_path):
             return
         self.on_change(event.src_path)
 

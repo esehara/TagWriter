@@ -246,6 +246,8 @@ tags:
     format: "文章全体を要約する"
   - tag: "profile"
     format: "人物のプロフィールを生成する。名前以外の各項目は<detail></detail>で囲む: {prompt}"
+  - tag: "prm"
+    format: "{prompt}"
 ```
 
 ### コマンド例
