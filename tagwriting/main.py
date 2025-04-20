@@ -2,6 +2,7 @@ import fnmatch
 import os
 import re
 import time
+import requests
 import datetime
 from pathlib import Path
 import yaml
@@ -28,6 +29,10 @@ UserPrompt:
 
 VERBOSE = True
 
+def verbose_print(msg):
+    if VERBOSE:
+        print(msg)
+
 class TextManager:
     def __init__(self, filepath, templates):
         """
@@ -40,6 +45,7 @@ class TextManager:
         if templates is None:
             templates = []
         self.templates = templates
+        self.url_catch = {}
 
     @classmethod
     def extract_tag_contents(cls, tag_name, text):
@@ -118,12 +124,60 @@ class TextManager:
             rel_path = match.group(1).strip()
             base_dir = os.path.dirname(filepath)
             abs_path = os.path.abspath(os.path.join(base_dir, rel_path))
-            try:
-                with open(abs_path, 'r', encoding='utf-8') as f:
-                    return f.read()
-            except Exception as e:
-                return f"[include error: {e}]"
-        return re.sub(pattern, replacer, text, flags=re.DOTALL)
+            with open(abs_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        try: 
+            return re.sub(pattern, replacer, text, flags=re.DOTALL)
+        except Exception as e:
+            print(f"[include error: {e}]")
+            return None
+
+    def replace_url_tags(self, text):
+        """
+        <url>https://example.com</url> の形式で記述されたタグを、
+        指定URLから取得したテキストデータで置換する。
+
+        url tagがerrorを起こした場合:
+          - 置換は行わず、元のテキストをそのまま返す
+          - エラーはコンソールに出力
+        Reason:
+          URLはファイルオープンに比べて不確定要素が多すぎるので、
+          エラーが起きたとしても処理が続行できるように柔軟性を持たせる。
+        
+        Catch機能も入れておく:
+          - キャッシュで取得済みのURLは再取得せず、キャッシュを返す
+        Reason:
+          - テキストは何度も短期間で変換されるため、そのたびにURLを取得する必要はない。
+          - URL先のテキストは、ローカルテキストの場合に比べて、より頻繁に変換される可能性は低い。
+        """
+        verbose_print("[debug][Process] Replacing URL tags...")
+        pattern = r'<url>(.*?)</url>'
+        def replacer(match):
+            url = match.group(1).strip()
+            verbose_print(f"[debug] URL found: {url}")
+            if url in self.url_catch:
+                verbose_print(f"[debug] URL cached: {url}")
+                return self.url_catch[url]
+            else:
+                verbose_print(f"[debug] URL not cached: {url}")
+                response = requests.get(url, timeout=10)
+                response.encoding = response.apparent_encoding
+                if response.status_code == 200:
+                    # HTMLならタグ除去（簡易）
+                    text = response.text
+                    if '<html' in text.lower():
+                        text = re.sub(r'<[^>]+>', '', text)
+                    self.url_catch[url] = text.strip()
+                    return text.strip()
+                else:
+                    print(f"[url error: status_code={response.status_code}]")
+                    return ""
+        try:
+            return re.sub(pattern, replacer, text, flags=re.DOTALL)
+        except Exception as e:
+            print(f"[url error: {e}]")
+            return text
+
 
     def _build_attrs_rules(self, attrs):
         rules = ""
@@ -152,12 +206,22 @@ class TextManager:
 
             tag, prompt, attrs = result
             prompt_text = self.text.replace(tag, "@@processing@@")
+
+            # includeエラーが起きたときは一回ストップする
             prompt_text = TextManager.replace_include_tags(self.filepath, prompt_text)
+            if prompt_text is None:
+                return None
             attrs_rules = self._build_attrs_rules(attrs)
+
+            # urlはincludeのあとに処理を行う。何が含まれているかわからないから。
+            prompt_text = self.replace_url_tags(prompt_text)
             response = ask_ai(self.templates["prompt"].format(
                 prompt=prompt, prompt_text=prompt_text, attrs_rules=attrs_rules))
-            response = TextManager.safe_text(response)
+            # responseがNoneのときは、中断
+            if response is None:
+                return None
 
+            response = TextManager.safe_text(response)
             self.text = self.text.replace(tag, f"{response}")
             self._save_text()
             self.append_history(prompt, response)
@@ -348,13 +412,17 @@ def ask_ai(prompt):
     if not api_key:
         raise RuntimeError("API_KEYが設定されていません。'.env'ファイルまたは環境変数を確認してください。")
     client = OpenAI(api_key=api_key, base_url=base_url)
-    if VERBOSE:
-        print(f"[yellow]Prompt text: {prompt}[/yellow]")
+    verbose_print(f"[yellow]Prompt text: {prompt}[/yellow]")
     completion = client.chat.completions.create(
         model=model,
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{"role": "user", "content": prompt}],
+        timeout=20
     )
-    return completion.choices[0].message.content
+    try:
+        return completion.choices[0].message.content
+    except Exception as e:
+        print(f"[red][bold][Error][/bold] AI error: {e}[/red]")
+        return None
 
 
 @click.command()

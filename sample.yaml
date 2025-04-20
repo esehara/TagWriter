@@ -19,7 +19,6 @@ history:
     Prompt: {prompt}
     Result: {result}
     Timestamp: {timestamp}
-    ---
 
 target:
   - "*.md"
