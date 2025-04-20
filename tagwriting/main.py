@@ -2,6 +2,7 @@ import fnmatch
 import os
 import re
 import time
+import datetime
 from pathlib import Path
 import yaml
 import click
@@ -159,10 +160,38 @@ class TextManager:
 
             self.text = self.text.replace(tag, f"{response}")
             self._save_text()
+            self.append_history(prompt, response)
             return (prompt, response)
         except Exception as e:
             print(f"[red][Error]: {e}")
             return None
+
+    def append_history(self, prompt, result):
+        """
+        LLMとのやりとり履歴をhistory.file/templatに従って保存する仮実装。
+        prompt: プロンプト文字列
+        result: LLMの応答
+        """
+        history_conf = self.templates.get('history', {})
+
+        # ファイル名決定
+        base = os.path.splitext(os.path.basename(self.filepath))[0]
+        file_tmpl = history_conf.get('file', '{filename}.history.md')
+        filename = file_tmpl.replace('{filename}', base)
+        filename = os.path.join(os.path.dirname(self.filepath), filename)
+
+        # テンプレート取得
+        template = history_conf.get('template', '---\nPrompt: {prompt}\nResult: {result}\nTimestamp: {timestamp}\n---\n')
+
+        # タイムスタンプ
+        timestamp = datetime.datetime.now().isoformat()
+
+        # テンプレート埋め込み
+        entry = template.format(prompt=prompt, result=result, timestamp=timestamp)
+
+        # 追記
+        with open(filename, 'a', encoding='utf-8') as f:
+            f.write(entry + '\n')
 
 
 class ConsoleClient:

@@ -12,17 +12,23 @@ prompt: |
 attrs:
   bullet: "箇条書きで出力する"
 
+history:
+  file: "{filename}.history.md"
+  template: |
+    ---
+    Prompt: {prompt}
+    Result: {result}
+    Timestamp: {timestamp}
+    ---
+
 target:
   - "*.md"
   - "*.markdown"
 
 ignore:
-  - "*.py"
-  - "*.yaml"
   - "README.md"
   - "sandbox/test_not_target.md"
   - ".git"
-  - "tests/"
 
 tags:
   - tag: "detail"
