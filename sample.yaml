@@ -1,0 +1,4 @@
+- tag: "detail"
+  format: "詳細に説明する: {prompt}"
+- tag: "summary"
+  format: "文章全体を要約する"

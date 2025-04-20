@@ -9,11 +9,21 @@ import re
 from openai import OpenAI
 from dotenv import load_dotenv
 from pathlib import Path
+import yaml
 
 
 class TextManger:
-    def __init__(self, filepath):
+    def __init__(self, filepath, templates):
+        """
+        filepath: str = "foobar.md"
+        templates: list[dict] = [{"tag": "tag_name", "format": "prompt formt"}]
+           - example: [{"tag": "summary",  "format": "summarize: {prompt}"}]
+        """
         self.filepath = os.path.abspath(filepath)
+
+        if templates is None:
+            templates = []
+        self.templates = templates
 
     def extract_tag_contents(self, tag_name):
         """
@@ -21,11 +31,30 @@ class TextManger:
         例: <prompt>内容</prompt> → "内容"
         """
         pattern = fr'<{tag_name}>(.*?)</{tag_name}>'
-        # 全てではない！
         match_tag =  re.search(pattern, self.text, flags=re.DOTALL)
         if match_tag:
             return (match_tag.group(0), match_tag.group(1))
         return None
+
+    def _pre_prompt(self):
+        for tag in self.templates:
+            result = self.extract_tag_contents(tag['tag'])
+            if result is not None:
+                tags, prompt = result
+                """
+                Simple replace for tags:
+                  example: tag = {"tag":"summary", "format":"summarize: {prompt}"}
+                  "<summary>adabracatabra</summary>" -> "<prompt>summarize: adabracatabra</prompt>"
+                """
+                replace_tags = f"<prompt>{tag['format']}</prompt>".format(prompt=prompt)
+                self.text = self.text.replace(tags, replace_tags)
+                self._save_text()
+                """
+                First Template Only:
+                  -> "<summary>adabracatabra</summary> <summary> foobar </summary>"
+                  -> "<prompt>summarize: adabracatabra</prompt> <summary> foobar </summary>"
+                """
+                return
 
     def _load_text(self):
         with open(self.filepath, 'r', encoding='utf-8') as f:
@@ -35,36 +64,67 @@ class TextManger:
         with open(self.filepath, 'w', encoding='utf-8') as f:
             f.write(self.text)
 
+    def _safe_text(self, response):
+        """
+        LLMのresponseに`<prompt>`タグを含めない
+    
+        理由: 再起が止まらくなるから。LLMの回答次第では、爆発的に増加する。
+          example: `<prompt>Why did I create this product?</prompt>` 
+            -> `<prompt>description of this product and usecase</prompt>`
+            -> `<prompt>Product Tagwriting example</prompt>`
+            ...
+        従って: promptにはpromptが含まれず、確実に停止することを保証する。            
+        """
+        return response.replace("<prompt>", "").replace("</prompt>", "")
+
     def extract_prompt_tag(self):
         self._load_text()
+        self._pre_prompt()
+        """
+        Process:
+          -> "<prompt>Why did I create this product?</prompt>" 
+          -> "@@processing@@" 
+          -> "TagWriting is awesome! (this is AI response)"
+        """
         result  = self.extract_tag_contents('prompt')
         if result is None:
             return None
         tag, prompt = result
         prompt_text = self.text.replace(tag, "@@processing@@")
-# 
         response = ask_ai(f"""
         あなたの回答は`@@processing@@`と置換されます。コンテキストの整合性に合わせてテキストを出力してください。
         Rule:
           - `@@processing@@`は貴方の解答に含めないでください。
-          - `<prompt></prompt>`は貴方の解答に含めないでください。
           - 解説や説明を含めず、UserPromptに直接回答してください。
         Context:
         {prompt_text}
         UserPrompt: 
         {prompt}""")
 
+        response = self._safe_text(response)
+
         self.text = self.text.replace(tag, f"{response}")
         self._save_text()
         return (prompt, response)
+
 
 class ConsoleClient:
     def __init__(self):
         self.console = Console()
 
-    def start(self):
+    def start(self, filename, templates):
         self.console.rule("[bold blue]Tagwriting CLI[/bold blue]")
         self.console.print("[bold magenta]Hello, Tagwriting CLI![/bold magenta] :sparkles:", justify="center")
+        self.templates = templates
+
+        filepath = os.path.abspath(filename)
+        if not os.path.isfile(filepath):
+            self.console.print(f"[red]ファイルが存在しません: {filepath}[/red]")
+            return
+        self.filepath = filepath
+
+        self.text_manager = TextManger(filepath, templates)
+        self.inloop()
 
     def show_file(self):
         self.console.rule(f"[bold yellow]ファイル更新: {os.path.basename(self.filepath)}[/bold yellow]")
@@ -77,21 +137,14 @@ class ConsoleClient:
             self.console.print(f"[bold green]Prompt:[/bold green] {prompt}")
             self.console.print(f"[bold green]Response:[/bold green] {response}")
 
-    def inloop(self, filename):
-        self.start()
-        filepath = os.path.abspath(filename)
-        if not os.path.isfile(filepath):
-            self.console.print(f"[red]ファイルが存在しません: {filepath}[/red]")
-            return
-        self.filepath = filepath
-        self.text_manager = TextManger(filepath)
-        event_handler = FileChangeHandler(filepath, self.on_change)
+    def inloop(self):
+        event_handler = FileChangeHandler(self.filepath, self.on_change)
 
         observer = Observer()
-        observer.schedule(event_handler, path=os.path.dirname(filepath) or '.', recursive=False)
+        observer.schedule(event_handler, path=os.path.dirname(self.filepath) or '.', recursive=False)
         observer.start()
 
-        self.console.print(f"[green]{filepath} の変更を監視しています。Ctrl+Cで終了します。[/green]", justify="center")
+        self.console.print(f"[green]{self.filepath} の変更を監視しています。Ctrl+Cで終了します。[/green]", justify="center")
         try:
             while True:
                 time.sleep(1)
@@ -122,7 +175,7 @@ class FileChangeHandler(FileSystemEventHandler):
 
 def ask_ai(prompt):
     """
-    指定したプロンプトをGrok (xAI) APIに送り、応答を返す
+    指定したプロンプトを外部のAI APIに送り、応答を返す
     """
     model = os.getenv("MODEL")
     api_key = os.getenv("API_KEY")
@@ -139,12 +192,16 @@ def ask_ai(prompt):
 
 @click.command()
 @click.argument('filename')
-def main(filename):
-    # カレントディレクトリの.envを明示的にロード
-    load_dotenv(dotenv_path=Path.cwd() / ".env", override=True)
+@click.option('--templates', 'yaml_path', default=None, help='Template yaml file path')
+def main(filename, yaml_path):
+    templates = None
+    if yaml_path:
+        with open(yaml_path, 'r', encoding='utf-8') as f:
+            templates = yaml.safe_load(f)
     client = ConsoleClient()
-    client.inloop(filename)
+    client.start(filename, templates)
 
 
 if __name__ == "__main__":
+    load_dotenv(dotenv_path=Path.cwd() / ".env", override=True)
     main()
