@@ -42,16 +42,6 @@ class TextManger:
             return (match_tag.group(0), match_tag.group(1)) 
         return None
 
-    @classmethod
-    def extract_innermost_process_tags(cls, text):
-        """
-        <process>タグのうち、最も内側のものだけを抽出する関数。
-        例: <process><process>ほげ</process></process> -> ['ほげ']
-        """
-        import re
-        pattern = r"<process></process>"
-        return re.findall(pattern, text, re.DOTALL)
-
     def _pre_prompt(self):
         for tag in self.templates:
             result = TextManger.extract_tag_contents(tag['tag'], self.text)
