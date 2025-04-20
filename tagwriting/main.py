@@ -1,16 +1,15 @@
-import click
-from rich.console import Console
-import readchar
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
-import time
+import fnmatch
 import os
 import re
-from openai import OpenAI
-from dotenv import load_dotenv
+import time
 from pathlib import Path
 import yaml
-import fnmatch
+import click
+from dotenv import load_dotenv
+from openai import OpenAI
+from rich.console import Console
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
 DEFAULT_PROMPT = """
 Your response will replace `@@processing@@` within the context. Please output text consistent with the context's integrity.
@@ -117,7 +116,7 @@ class TextManger:
         self._pre_prompt()
         """
         Process:
-          -> "<prompt>Why did I create this product?</prompt>" 
+          -> "<prompt>Do you think this product?</prompt>" 
           -> "@@processing@@" 
           -> "TagWriting is awesome! (this is AI response)"
         """
@@ -284,6 +283,7 @@ def ask_ai(prompt):
 @click.argument('dirpath')
 @click.option('--templates', 'yaml_path', default=None, help='Template yaml file path')
 def main(dirpath, yaml_path):
+    load_dotenv(dotenv_path=Path.cwd() / ".env", override=True)
     templates = None
     if yaml_path:
         with open(yaml_path, 'r', encoding='utf-8') as f:
@@ -293,5 +293,4 @@ def main(dirpath, yaml_path):
 
 
 if __name__ == "__main__":
-    load_dotenv(dotenv_path=Path.cwd() / ".env", override=True)
     main()
