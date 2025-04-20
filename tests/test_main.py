@@ -80,3 +80,21 @@ def test_match_patterns_empty():
     path = os.path.abspath(__file__)
     patterns = []
     assert not FileChangeHandler.match_patterns(path, patterns)
+
+def test_prepend_wikipedia_sources():
+    # 1. 通常ケース
+    prompt = "これはテストです。"
+    sources = [
+        ("OpenAI", "OpenAIは人工知能の研究所です。"),
+        ("イーロン・マスク", "イーロン・マスクは実業家です。"),
+    ]
+    result = TextManager.prepend_wikipedia_sources(prompt, sources)
+    print(result)
+    assert result.startswith("---\n\n# Sources:\n\n")
+    assert "OpenAI" in result and "イーロン・マスク" in result
+    assert result.endswith(prompt)
+
+    # 2. sourcesが空
+    sources = []
+    result = TextManager.prepend_wikipedia_sources(prompt, sources)
+    assert result == prompt

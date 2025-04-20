@@ -178,28 +178,51 @@ class TextManager:
             print(f"[url error: {e}]")
             return text
 
-    def replace_wikipedia_tags(self, text):
+    @classmethod
+    def prepend_wikipedia_sources(cls, prompt_text, wikipedia_sources):
         """
-        <wikipedia>記事タイトル</wikipedia> の形式で記述されたタグを、
-        Wikipedia APIから取得した記事本文で置換する。
+        wikipedia_sources: Set[Tuple[str, str or None]]
+        
+        prompt_textの先頭に、
+         ---
+         # Sources:
+         ## OpenAI
+          ...
+         ---
+        の形で挿入する。
+        
+        Wikipediaのタグもここで消去する。
+        """
+        if not wikipedia_sources:
+            return prompt_text
+        lines = ["---", "# Sources:"]
+        for title, extract in wikipedia_sources:
+            if extract:
+                lines.append(f"## {title}\n{extract}")
+        header = '\n\n'.join(lines) + '\n\n---\n'
+        prompt_text = prompt_text.replace("<wikipedia>", "").replace("</wikipedia>", "")
+        return header + prompt_text
 
-        - API取得失敗時は「[wikipedia error: ...]」で置換
-        - 取得済みタイトルはキャッシュ（self.url_catch）
-        - 記事タイトルはタグ内テキストをそのまま使う
-        - 日本語Wikipediaを利用
+    def fetch_wikipedia_tags(self, text):
         """
-        verbose_print("[debug][Process] Replacing Wikipedia tags...")
+        <wikipedia>記事タイトル</wikipedia> の形式で記述されたタグを全て検出し、
+        Wikipedia APIから取得した記事本文と組み合わせたsetを返す。
+
+        Returns:
+            Set[Tuple[str, str or None]]: (タイトル, 記事本文 or None) のセット
+        """
+        verbose_print("[debug][Process] Fetching Wikipedia tags...")
         pattern = r'<wikipedia>(.*?)</wikipedia>'
-        def replacer(match):
-            title = match.group(1).strip()
-            verbose_print(f"[debug] Wikipedia title found: {title}")
+        titles = set(title.strip() for title in re.findall(pattern, text, flags=re.DOTALL))
+        results = set()
+        for title in titles:
             cache_key = f"wikipedia:{title}"
             if cache_key in self.url_catch:
                 verbose_print(f"[debug] Wikipedia cached: {title}")
-                return self.url_catch[cache_key]
+                extract = self.url_catch[cache_key]
+                results.add((title, extract))
+                continue
             try:
-                # Wikipedia API: 
-                #   -> https://ja.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&format=json&titles=タイトル
                 api = "https://ja.wikipedia.org/w/api.php"
                 params = {
                     "action": "query",
@@ -214,25 +237,21 @@ class TextManager:
                     pages = data.get("query", {}).get("pages", {})
                     if not pages:
                         raise Exception("No pages found")
-                    # ページIDは動的なので最初の値を取る
                     page = next(iter(pages.values()))
-                    extract = page.get("extract", "")
+                    extract = page.get("extract", None)
                     if extract:
-                        self.url_catch[cache_key] = extract.strip()
-                        return extract.strip()
+                        extract = extract.strip()
+                        self.url_catch[cache_key] = extract
+                        results.add((title, extract))
+                        continue
                     else:
-                        raise Exception("No extract found")
+                        continue
                 else:
-                    raise Exception(f"status_code={response.status_code}")
+                    continue
             except Exception as e:
                 print(f"[wikipedia error: {e}]")
-                # エラー時はタグそのまま返す
-                return match.group(0)
-        try:
-            return re.sub(pattern, replacer, text, flags=re.DOTALL)
-        except Exception as e:
-            print(f"[wikipedia error: {e}]")
-            return text
+                results.add((title, None))
+        return results
 
     def _build_attrs_rules(self, attrs):
         rules = ""
@@ -270,7 +289,11 @@ class TextManager:
 
             # urlはincludeのあとに処理を行う。何が含まれているかわからないから。
             prompt_text = self.replace_url_tags(prompt_text)
-            prompt_text = self.replace_wikipedia_tags(prompt_text)
+            
+            # ---- Wikipedia ----
+            wikipedia_tags = self.fetch_wikipedia_tags(prompt_text)
+            # Wikipedia記事の取得結果を反映
+            prompt_text = TextManager.prepend_wikipedia_sources(prompt_text, wikipedia_tags)
             response = ask_ai(self.templates["prompt"].format(
                 prompt=prompt, prompt_text=prompt_text, attrs_rules=attrs_rules))
             # responseがNoneのときは、中断
