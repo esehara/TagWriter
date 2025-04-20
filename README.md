@@ -215,6 +215,24 @@ promptタグで生成されたテキストは、停止可能性を担保する�
 
 保存時、`foo.md`や`bar.md`の内容がそれぞれ該当部分に挿入されます。
 
+### wikipediaタグ（`<wikipedia>キーワード</wikipedia>`）
+
+```markdown
+Tagwriterは<wikipedia>人工知能</wikipedia>を利用しています。
+```
+
+このように書いたとき、以下のようにテキストの先頭にコンテキストを補給します。
+
+```markdown
+---
+# Wikipedia resources:
+## 人工知能
+
+(記事の内容)
+---
+Tagwriterは<wikipedia>人工知能</wikipedia>を利用しています。
+```
+
 ## YAMLテンプレートシステム
 
 TagWritingでは、YAMLファイルによるテンプレートシステムをサポートしています。これにより、独自のタグやプロンプトのフォーマット、無視するファイルなどを柔軟に定義できます。
@@ -227,14 +245,28 @@ prompt: |
   Rule:
    - `@@processing@@`は貴方の解答に含めないでください。
    - 解説や説明を含めず、user promptに直接回答してください。
+  {attrs_rules}
   context:
   {prompt_text}
   user prompt: 
   {prompt}
 
+attrs:
+  bullet: "箇条書きで出力する"
+
+history:
+  file: "{filename}.history.md"
+  template: |
+    ---
+    Prompt: {prompt}
+    Result: {result}
+    Timestamp: {timestamp}
+
+target:
+  - "*.md"
+  - "*.markdown"
+
 ignore:
-  - "*.py"
-  - "*.yaml"
   - "README.md"
   - "sandbox/test_not_target.md"
   - ".git"
@@ -246,8 +278,6 @@ tags:
     format: "文章全体を要約する"
   - tag: "profile"
     format: "人物のプロフィールを生成する。名前以外の各項目は<detail></detail>で囲む: {prompt}"
-  - tag: "prm"
-    format: "{prompt}"
 ```
 
 ### コマンド例
@@ -259,7 +289,10 @@ tagwriting ./foobar/path --templates sample.yaml
 ### テンプレートの書式
 
 - `prompt`: LLMに送る全体テンプレート。`{prompt}`や`{prompt_text}`が利用可能。
-- `ignore`: 無視するファイルやパターンのリスト。
+- `target`: 対象ファイルのパターンのリスト。ホワイトリスト形式。
+- `ignore`: 無視するファイルやパターンのリスト。ブラックリスト形式。
+- `attrs`: 属性プロンプトルールの定義。
+- `history`: そのファイルのLLMとのやり取りを記録する方式。
 - `tags`: 独自タグのリスト。各タグは`tag`と`format`を持ち、`{prompt}`でタグ内テキストを埋め込む。
 
 #### カスタムタグのサンプル
@@ -276,7 +309,7 @@ Markdownファイル内の
 <prompt>詳細に説明する: この物語について説明してください。</prompt>
 ```
 
-に自動変換されます。その後、LLMへの処理が行われます。
+に自動変換されてテキストに保存されます。その後、LLMへの処理が行われます。
 
 ---
 

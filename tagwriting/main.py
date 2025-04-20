@@ -195,12 +195,11 @@ class TextManager:
         """
         if not wikipedia_sources:
             return prompt_text
-        lines = ["---", "# Sources:"]
+        lines = ["---", "# Wikipedia resources:"]
         for title, extract in wikipedia_sources:
             if extract:
                 lines.append(f"## {title}\n{extract}")
         header = '\n\n'.join(lines) + '\n\n---\n'
-        prompt_text = prompt_text.replace("<wikipedia>", "").replace("</wikipedia>", "")
         return header + prompt_text
 
     def fetch_wikipedia_tags(self, text):
