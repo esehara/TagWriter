@@ -8,6 +8,12 @@ prompt: |
   UserPrompt: 
   {prompt}
 
+ignore:
+  - "main.py"
+  - "README.md"
+  - "sample.yaml"
+  - "./sandbox/test_not_target.md"
+
 tags:
   - tag: "detail"
     format: "詳細に説明する: {prompt}"

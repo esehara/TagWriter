@@ -125,17 +125,35 @@ class ConsoleClient:
     def __init__(self):
         self.console = Console()
 
+    def _build_templates(self, templates):
+        """ 
+        Default templates param
+
+        prompt: sending to LLM template.
+        tags: list of template tags. replace <process> tag.
+        ignore: list of files to ignore.
+        """
+        if templates is None:
+            templates = {}
+
+        # if None, set default
+        if templates["prompt"] is None:
+            templates["prompt"] = DEFAULT_PROMPT           
+        if templates["tags"] is None:
+            templates["tags"] = []
+        if templates["ignore"] is None:
+            templates["ignore"] = []
+
+        # change absolute path for ignore file
+        templates["ignore"] = [os.path.abspath(p) for p in templates["ignore"]]
+
+        return templates
+
     def start(self, dirpath, templates):
         self.console.rule("[bold blue]Tagwriting CLI[/bold blue]")
         self.console.print("[bold magenta]Hello, Tagwriting CLI![/bold magenta] :sparkles:", justify="center")
         
-        # Default templates param
-        if templates is None:
-            templates = {
-                "prompt": DEFAULT_PROMPT,
-                "tags": []
-            }
-        self.templates = templates
+        self.templates = self._build_templates(templates)
 
         # use absolute path
         dirpath = os.path.abspath(dirpath)
@@ -157,7 +175,7 @@ class ConsoleClient:
 
     def inloop(self):
         self.console.print(f"[green]Start clients... [/green]", justify="center")
-        event_handler = FileChangeHandler(self.dirpath, self.on_change)
+        event_handler = FileChangeHandler(self.dirpath, self.on_change, self.templates["ignore"])
         observer = Observer()
         observer.schedule(event_handler, path=os.path.dirname(self.dirpath), recursive=True)
         observer.start()
@@ -173,12 +191,13 @@ class ConsoleClient:
 
 
 class FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, dirpath, on_change, debounce_interval=2.0):
+    def __init__(self, dirpath, on_change, ignore, debounce_interval=2.0):
         super().__init__()
         self.dirpath = os.path.abspath(dirpath)
         self.on_change = on_change
         self._last_called = 0
         self._debounce_interval = debounce_interval
+        self._ignore = ignore
 
     def _is_debounce(self):
         now = time.time()
@@ -187,8 +206,8 @@ class FileChangeHandler(FileSystemEventHandler):
             return True
 
     def on_modified(self, event):
-        #if self._is_debounce():
-        print("Changed:", event.src_path)
+        if event.src_path in self._ignore:
+            return
         self.on_change(event.src_path)
 
 
