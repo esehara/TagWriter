@@ -176,20 +176,38 @@ Tagwritingの内部で、以下の流れで動作します。
 
 ## YAMLテンプレートシステム
 
-Tagwritingでは、YAMLファイルによるテンプレートシステムをサポートしています。これにより、独自のタグやプロンプトのフォーマットを柔軟に定義できます。
+TagWritingでは、YAMLファイルによるテンプレートシステムをサポートしています。これにより、独自のタグやプロンプトのフォーマット、無視するファイルなどを柔軟に定義できます。
 
-### 使い方
-
-1. テンプレート用のYAMLファイルを作成します（例: `sample.yaml`）。
+### sample.yaml の例
 
 ```yaml
-- tag: summary
-  format: 文章全体を要約する
-- tag: detail
-  format: 詳細に説明する: {prompt}
+prompt: |
+  あなたの回答はcontext内の`@@processing@@`と置換されます。コンテキストの整合性に合わせてテキストを出力してください。
+  Rule:
+   - `@@processing@@`は貴方の解答に含めないでください。
+   - 解説や説明を含めず、user promptに直接回答してください。
+  context:
+  {prompt_text}
+  user prompt: 
+  {prompt}
+
+ignore:
+  - "*.py"
+  - "*.yaml"
+  - "README.md"
+  - "sandbox/test_not_target.md"
+  - ".git"
+
+tags:
+  - tag: "detail"
+    format: "詳細に説明する: {prompt}"
+  - tag: "summary"
+    format: "文章全体を要約する"
+  - tag: "profile"
+    format: "人物のプロフィールを生成する。名前以外の各項目は<detail></detail>で囲む: {prompt}"
 ```
 
-2. コマンドラインで`--templates`オプションを使い、テンプレートYAMLファイルを指定します。
+### コマンド例
 
 ```sh
 tagwriting ./foobar/path --templates sample.yaml
@@ -197,10 +215,11 @@ tagwriting ./foobar/path --templates sample.yaml
 
 ### テンプレートの書式
 
-- `tag`: Markdown内で変換対象となるタグ名（例: `<summary>...</summary>`）。
-- `format`: 変換後のプロンプトのフォーマット。`{prompt}`の部分がタグ内のテキストで置換されます。
+- `prompt`: LLMに送る全体テンプレート。`{prompt}`や`{prompt_text}`が利用可能。
+- `ignore`: 無視するファイルやパターンのリスト。
+- `tags`: 独自タグのリスト。各タグは`tag`と`format`を持ち、`{prompt}`でタグ内テキストを埋め込む。
 
-#### 例
+#### カスタムタグのサンプル
 
 Markdownファイル内の
 
