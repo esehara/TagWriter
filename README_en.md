@@ -74,7 +74,7 @@ pip install .
 2. Use as a command-line tool:
 
 ```sh
-tagwriting <filename>
+tagwriting <directory>
 ```
 
 ---

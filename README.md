@@ -85,7 +85,7 @@ pip install .
 2. コマンドラインツールとして使う
 
 ```sh
-tagwriting <ファイル名>
+tagwriting <ディレクトリ名>
 ```
 
 ---
