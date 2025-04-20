@@ -21,6 +21,7 @@ Context:
 UserPrompt:
 {prompt}
 """
+
 class TextManger:
     def __init__(self, filepath, templates):
         """
