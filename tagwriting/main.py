@@ -11,7 +11,16 @@ from dotenv import load_dotenv
 from pathlib import Path
 import yaml
 
-
+DEFAULT_PROMPT = """
+Your response will replace `@@processing@@` within the context. Please output text consistent with the context's integrity.
+Rule:
+- Do not include `@@processing@@` in your response.
+- Answer the UserPrompt directly, without explanations or commentary.
+Context:
+{prompt_text}
+UserPrompt:
+{prompt}
+"""
 class TextManger:
     def __init__(self, filepath, templates):
         """
@@ -118,6 +127,13 @@ class ConsoleClient:
     def start(self, filename, templates):
         self.console.rule("[bold blue]Tagwriting CLI[/bold blue]")
         self.console.print("[bold magenta]Hello, Tagwriting CLI![/bold magenta] :sparkles:", justify="center")
+   
+        # Default templates param
+        if templates is None:
+            templates = {
+                "prompt": DEFAULT_PROMPT,
+                "tags": []
+            }
         self.templates = templates
 
         filepath = os.path.abspath(filename)
