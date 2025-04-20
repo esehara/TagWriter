@@ -8,6 +8,7 @@ import click
 from dotenv import load_dotenv
 from openai import OpenAI
 from rich.console import Console
+from rich import print
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -16,13 +17,17 @@ Your response will replace `@@processing@@` within the context. Please output te
 Rule:
 - Do not include `@@processing@@` in your response.
 - Answer the UserPrompt directly, without explanations or commentary.
+Rule:
+{attrs_rules}
 Context:
 {prompt_text}
 UserPrompt:
 {prompt}
 """
 
-class TextManger:
+VERBOSE = True
+
+class TextManager:
     def __init__(self, filepath, templates):
         """
         filepath: str = "foobar.md"
@@ -39,17 +44,20 @@ class TextManger:
     def extract_tag_contents(cls, tag_name, text):
         """
         get tag and inner text.
-          example: <prompt>内容</prompt> → "内容"
+          example: <prompt:funny>内容</prompt>
+            -> ("<prompt:funny>内容</prompt>", "内容", ["funny"])
         recursive process:
           example: <prompt>summarize: <prompt> Python language </prompt></prompt>
-            -> <prompt>Python language</prompt> -> "Python language"
+            -> <prompt>Python language</prompt>
+            -> ("<prompt>Python language</prompt>", "Python language", [])
         """
-        pattern = fr'<{tag_name}>((?:(?!<{tag_name}>).)*?)</{tag_name}>'
+        pattern = fr'<{tag_name}(?::([\w:]+))?>((?:(?!<{tag_name}>).)*?)</{tag_name}>'
         match_tag =  re.search(pattern, text, flags=re.DOTALL)
         if match_tag:
             # match_tag.group(0) -> tag (<process>foobar</process>)
-            # match_tag.group(1) -> inner text (foobar)
-            return (match_tag.group(0), match_tag.group(1)) 
+            # match_tag.group(2) -> inner text (foobar)
+            attrs = match_tag.group(1).split(':') if match_tag.group(1) else []
+            return (match_tag.group(0), match_tag.group(2), attrs) 
         return None
 
     def _pre_prompt(self):
@@ -63,10 +71,12 @@ class TextManger:
             -> "<prompt>summarize: adabracatabra</prompt> <summary> foobar </summary>"
         """
         for tag in self.templates["tags"]:
-            result = TextManger.extract_tag_contents(tag['tag'], self.text)
+            result = TextManager.extract_tag_contents(tag['tag'], self.text)
             if result is not None:
-                tags, prompt = result
-                replace_tags = f"<prompt>{tag['format']}</prompt>".format(prompt=prompt)
+                tags, prompt, attrs = result
+                attrs_text = ":".join(attrs) if attrs else ""
+                attrs_text = f":{attrs_text}" if attrs_text != "" else ""
+                replace_tags = f"<prompt{attrs_text}>{tag['format']}</prompt>".format(prompt=prompt)
                 self.text = self.text.replace(tags, replace_tags)
                 self._save_text()
                 return
@@ -111,6 +121,13 @@ class TextManger:
                 return f"[include error: {e}]"
         return re.sub(pattern, replacer, text, flags=re.DOTALL)
 
+    def _build_attrs_rules(self, attrs):
+        # self.templates["attrs"] dicts -> str
+        rules = ""
+        for attr in attrs:
+            rules += f" - {self.templates['attrs'][attr]}\n"
+        return rules
+
     def extract_prompt_tag(self):
         self._load_text()
         self._pre_prompt()
@@ -120,19 +137,19 @@ class TextManger:
           -> "@@processing@@" 
           -> "TagWriting is awesome! (this is AI response)"
         """
-        result  = TextManger.extract_tag_contents('prompt', self.text)
-        
+        result  = TextManager.extract_tag_contents('prompt', self.text)
         #<prompt> tag is not found:
         #  -> stop process
         if result is None:
             return None
 
-        tag, prompt = result
+        tag, prompt, attrs = result
         prompt_text = self.text.replace(tag, "@@processing@@")
 
-        # Prompt 
-        prompt_text = TextManger.replace_include_tags(self.filepath, prompt_text)
-        response = ask_ai(self.templates["prompt"].format(prompt=prompt, prompt_text=prompt_text))
+        prompt_text = TextManager.replace_include_tags(self.filepath, prompt_text)
+        attrs_rules = self._build_attrs_rules(attrs)
+        response = ask_ai(self.templates["prompt"].format(
+            prompt=prompt, prompt_text=prompt_text, attrs_rules=attrs_rules))
         response = self._safe_text(response)
 
         self.text = self.text.replace(tag, f"{response}")
@@ -162,6 +179,8 @@ class ConsoleClient:
             templates["tags"] = []
         if templates["ignore"] is None:
             templates["ignore"] = []
+        if templates["attrs"] is None:
+            templates["attrs"] = {}
 
         # change absolute path for ignore file
         templates["ignore"] = [os.path.abspath(p) for p in templates["ignore"]]
@@ -184,8 +203,8 @@ class ConsoleClient:
         self.inloop()
         
     def on_change(self, filepath):
-        self.console.rule(f"[bold yellow]ファイル更新: {os.path.basename(filepath)}[/bold yellow]")
-        text_manager = TextManger(filepath, self.templates)
+        self.console.rule(f"[bold yellow]File changed: {os.path.basename(filepath)}[/bold yellow]")
+        text_manager = TextManager(filepath, self.templates)
         result = text_manager.extract_prompt_tag()
         if result is not None:
             prompt, response = result
@@ -272,6 +291,8 @@ def ask_ai(prompt):
     if not api_key:
         raise RuntimeError("API_KEYが設定されていません。'.env'ファイルまたは環境変数を確認してください。")
     client = OpenAI(api_key=api_key, base_url=base_url)
+    if VERBOSE:
+        print(f"[yellow]Prompt text: {prompt}[/yellow]")
     completion = client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}]
