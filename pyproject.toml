@@ -13,7 +13,8 @@ dependencies = [
     "readchar",
     "watchdog",
     "openai",
-    "python-dotenv"
+    "python-dotenv",
+    "pyyaml"
 ]
 
 [project.scripts]
