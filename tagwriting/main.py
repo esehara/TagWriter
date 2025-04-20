@@ -89,9 +89,10 @@ class TextManager:
         with open(self.filepath, 'w', encoding='utf-8') as f:
             f.write(self.text)
 
-    def _safe_text(self, response):
+    @classmethod
+    def safe_text(cls, response):
         """
-        LLMのresponseに`<prompt>`タグを含めない
+        LLMのresponseに属性付き<prompt>タグも含めない
     
         理由: 再起が止まらくなるから。LLMの回答次第では、爆発的に増加する。
           example: `<prompt>Why did I create this product?</prompt>` 
@@ -100,7 +101,9 @@ class TextManager:
             ...
         従って: promptにはpromptが含まれず、確実に停止することを保証する。            
         """
-        return response.replace("<prompt>", "").replace("</prompt>", "")
+        response = re.sub(r'<prompt(:[\w:]+)?>', '', response)
+        response = response.replace('</prompt>', '')
+        return response
 
     @classmethod
     def replace_include_tags(cls, filepath, text):
@@ -152,7 +155,7 @@ class TextManager:
         attrs_rules = self._build_attrs_rules(attrs)
         response = ask_ai(self.templates["prompt"].format(
             prompt=prompt, prompt_text=prompt_text, attrs_rules=attrs_rules))
-        response = self._safe_text(response)
+        response = TextManager.safe_text(response)
 
         self.text = self.text.replace(tag, f"{response}")
         self._save_text()
