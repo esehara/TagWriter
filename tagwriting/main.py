@@ -317,15 +317,15 @@ class TextManager:
             # <chat>タグの場合は、
             #   -> コンテキストをなくす("@@processing@@")だけにする
             if result_kind == 'prompt':
-                prompt_text = self.text.replace(tag, "@@processing@@")
+                context = self.text.replace(tag, "@@processing@@")
             else:
                 # <chat>タグの場合は、全てのコンテキストを除去する
                 #   -> @@processing@@をそのまま使用
-                prompt_text = "@@processing@@"
+                context = "@@processing@@"
             # ---- Include ----
-            prompt_text = TextManager.replace_include_tags(self.filepath, prompt_text)
+            context = TextManager.replace_include_tags(self.filepath, context)
             # Includeエラーが起きたときは一回ストップする
-            if prompt_text is None:
+            if context is None:
                 return None
             # Promptの内部にあるincludeタグも置換する
             prompt = TextManager.replace_include_tags(self.filepath, prompt)
@@ -341,7 +341,7 @@ class TextManager:
             wikipedia_tags = self.fetch_wikipedia_tags(context)
             wikipedia_tags = wikipedia_tags | self.fetch_wikipedia_tags(prompt)
             # Wikipedia記事の取得結果を反映
-            prompt_text = TextManager.prepend_wikipedia_sources(context, wikipedia_tags)
+            context = TextManager.prepend_wikipedia_sources(context, wikipedia_tags)
 
             response = ask_ai(self.templates["prompt"].format(
                 prompt=prompt, context=context, attrs_rules=attrs_rules))

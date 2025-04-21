@@ -358,14 +358,3 @@ For example, if you want to keep the user prompt used with the `<chat></chat>` t
 attrs:
    remain: "Keep the user prompt with a `> ` prefix"
 ```
-
-## Can I refer to Wikipedia articles individually with the chat tag?
-
-This would blur the behavior of the <chat> tag, which is "use only the text inside the chat tag, not the context of the whole file". It could confuse users, and would require a somewhat complex implementation, so for now, it's not planned (low priority).
-
-Instead, here is the recommended way to use tagwriting:
-
- 1. Create a new file and use <wikipedia> and <prompt> to generate text there.
- 2. In the file you want to use, write <include>newfile.md</include> (or copy and paste).
-
-This reflects the design philosophy of TagWriting: "treat the entire text file as the primary context for the LLM". If you want more control over context, prepare a separate text file. This also makes editing text files easier.
