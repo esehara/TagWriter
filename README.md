@@ -319,6 +319,14 @@ Tagwritingは<wikipedia>人工知能</wikipedia>を利用しています。
 Tagwritingは<wikipedia>人工知能</wikipedia>を利用しています。
 ```
 
+また、これは`chat`タグの内部でも使えるようにしています。
+
+```
+<chat>
+  <wikipedia>人工知能</wikipedia>を教えて
+</chat>
+```
+
 #### 仕様
 ##### Error: wikipedia先が取得できないときの挙動
 
