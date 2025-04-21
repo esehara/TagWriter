@@ -214,13 +214,13 @@ prompt: |
   user prompt:
   {prompt}
 
-history:
-  file: "{filename}.history.md"
-  template: |
-    ---
-    Prompt: {prompt}
-    Result: {result}
-    Timestamp: {timestamp}
+# history:
+#  file: "{filename}.history.md"
+#  template: |
+#    ---
+#    Prompt: {prompt}
+#    Result: {result}
+#    Timestamp: {timestamp}
 
 target:
   - "*.md"

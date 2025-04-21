@@ -28,6 +28,14 @@ UserPrompt:
 {prompt}
 """
 
+DEFAULT_HISTORY_TEMPLATE = """
+---
+Prompt: {prompt}
+Result: {result}
+Timestamp: {timestamp}
+
+"""
+
 VERBOSE = True
 
 def verbose_print(msg):
@@ -395,6 +403,10 @@ class ConsoleClient:
             templates["ignore"] = []
         if "attrs" not in templates:
             templates["attrs"] = {}
+        if "history" not in templates:
+            templates["history"] = {
+                "file": "{filename}.history.md", 
+                "template": DEFAULT_HISTORY_TEMPLATE}
         if "target" not in templates:
             templates["target"] = ["*.txt", "*.md", "*.markdown"]
         if "hook" not in templates:
