@@ -317,7 +317,9 @@ class TextManager:
             # <chat>タグの場合は、
             #   -> コンテキストをなくす("@@processing@@")だけにする
             if result_kind == 'prompt':
-                context = self.text.replace(tag, "@@processing@@")
+                # 同じ<prompt>hoge</prompt>というタグが出てくる可能性があるので、
+                # 1回だけ置換する
+                context = self.text.replace(tag, "@@processing@@", 1)
             else:
                 # <chat>タグの場合は、全てのコンテキストを除去する
                 #   -> @@processing@@をそのまま使用
@@ -355,7 +357,7 @@ class TextManager:
             response = TextManager.safe_text(response, 'prompt')
             response = TextManager.safe_text(response, 'chat')
             
-            self.text = self.text.replace(tag, f"{response}")
+            self.text = self.text.replace(tag, f"{response}", 1)
             self._save_text()
             self.append_history(prompt, response)
             return (prompt, response)
