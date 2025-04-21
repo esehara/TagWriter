@@ -352,7 +352,7 @@ class TextManager:
         # ファイル名決定
         base = os.path.splitext(os.path.basename(self.filepath))[0]
         file_tmpl = history_conf.get('file', '{filename}.history.md')
-        filename = file_tmpl.replace('{filename}', base)
+        filename = file_tmpl.format(filename=base)
         filename = os.path.join(os.path.dirname(self.filepath), filename)
 
         # テンプレート取得
