@@ -14,6 +14,7 @@ from rich.console import Console
 from rich import print
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+import importlib.metadata
 
 DEFAULT_PROMPT = """
 Your response will replace `@@processing@@` within the context. Please output text consistent with the context's integrity.
@@ -449,7 +450,9 @@ class ConsoleClient:
 
     def start(self, dirpath, templates):
         self.console.rule("[bold blue]Tagwriting CLI[/bold blue]")
-        self.console.print("[bold magenta]Hello, Tagwriting CLI![/bold magenta] :sparkles:", justify="center")
+        self.console.print(f"[bold magenta]Hello, Tagwriting CLI![/bold magenta] :sparkles:", justify="center")
+        version = importlib.metadata.version("tagwriting")
+        self.console.print(f"[yellow]Version: {version}[/yellow]", justify="center")
         
         self.templates = self._build_templates(templates)
 
