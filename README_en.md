@@ -210,9 +210,21 @@ prompt: |
    - Do not include `@@processing@@` in your answer.
    - Do not include explanations; answer the user prompt directly.
   context:
-  {prompt_text}
+  {context}
   user prompt:
   {prompt}
+
+history:
+  file: "{filename}.history.md"
+  template: |
+    ---
+    Prompt: {prompt}
+    Result: {result}
+    Timestamp: {timestamp}
+
+target:
+  - "*.md"
+  - "*.markdown"
 
 ignore:
   - "*.py"

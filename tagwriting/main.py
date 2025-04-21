@@ -23,7 +23,7 @@ Rule:
 Rule:
 {attrs_rules}
 Context:
-{prompt_text}
+{context}
 UserPrompt:
 {prompt}
 """
@@ -272,8 +272,17 @@ class TextManager:
               -> "@@processing@@" 
               -> "TagWriting is awesome! (this is AI response)"
             """
+
+            # ---- Prompt or Chat ----
+            result_kind = None
+
             result  = TextManager.extract_tag_contents('prompt', self.text)
-            #<prompt> tag is not found:
+            if result is not None:
+                result_kind = 'prompt'
+            else:
+                result = TextManager.extract_tag_contents('chat', self.text)
+                result_kind = 'chat'            
+            # <prompt> or <chat> tag is not found:
             #  -> stop process
             if result is None:
                 return None
@@ -281,21 +290,31 @@ class TextManager:
             tag, prompt, attrs = result
             prompt_text = self.text.replace(tag, "@@processing@@")
 
-            # includeエラーが起きたときは一回ストップする
+            # ---- Include ----
             prompt_text = TextManager.replace_include_tags(self.filepath, prompt_text)
+            # Includeエラーが起きたときは一回ストップする
             if prompt_text is None:
                 return None
             attrs_rules = self._build_attrs_rules(attrs)
 
-            # urlはincludeのあとに処理を行う。何が含まれているかわからないから。
+            # ---- URL ----
             prompt_text = self.replace_url_tags(prompt_text)
-            
             # ---- Wikipedia ----
             wikipedia_tags = self.fetch_wikipedia_tags(prompt_text)
             # Wikipedia記事の取得結果を反映
             prompt_text = TextManager.prepend_wikipedia_sources(prompt_text, wikipedia_tags)
+
+            # ---- LLM ----
+            if result_kind == 'prompt':
+                context = prompt_text
+            else:
+                # <chat>タグの場合は、全てのコンテキストを除去する
+                #   -> @@processing@@をそのまま使用
+                context = "@@processing@@"
+
             response = ask_ai(self.templates["prompt"].format(
-                prompt=prompt, prompt_text=prompt_text, attrs_rules=attrs_rules))
+                prompt=prompt, context=context, attrs_rules=attrs_rules))
+
             # responseがNoneのときは、中断
             if response is None:
                 return None

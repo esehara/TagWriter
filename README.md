@@ -247,7 +247,7 @@ prompt: |
    - 解説や説明を含めず、user promptに直接回答してください。
   {attrs_rules}
   context:
-  {prompt_text}
+  {context}
   user prompt: 
   {prompt}
 
