@@ -218,7 +218,7 @@ promptタグで生成されたテキストは、停止可能性を担保する�
 ### wikipediaタグ（`<wikipedia>キーワード</wikipedia>`）
 
 ```markdown
-Tagwriterは<wikipedia>人工知能</wikipedia>を利用しています。
+Tagwritingは<wikipedia>人工知能</wikipedia>を利用しています。
 ```
 
 このように書いたとき、以下のようにテキストの先頭にコンテキストを補給します。
@@ -230,7 +230,7 @@ Tagwriterは<wikipedia>人工知能</wikipedia>を利用しています。
 
 (記事の内容)
 ---
-Tagwriterは<wikipedia>人工知能</wikipedia>を利用しています。
+Tagwritingは<wikipedia>人工知能</wikipedia>を利用しています。
 ```
 
 ## YAMLテンプレートシステム
