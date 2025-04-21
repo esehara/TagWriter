@@ -368,17 +368,17 @@ class ConsoleClient:
             templates = {}
 
         # if None, set default
-        if templates["prompt"] is None:
+        if "prompt" not in templates:
             templates["prompt"] = DEFAULT_PROMPT           
-        if templates["tags"] is None:
+        if "tags" not in templates:
             templates["tags"] = []
-        if templates["ignore"] is None:
+        if "ignore" not in templates:
             templates["ignore"] = []
-        if templates["attrs"] is None:
+        if "attrs" not in templates:
             templates["attrs"] = {}
-        if templates["target"] is None:
+        if "target" not in templates:
             templates["target"] = []
-        if templates["hook"] is None:
+        if "hook" not in templates:
             templates["hook"] = {}
 
         # change absolute path for ignore file
