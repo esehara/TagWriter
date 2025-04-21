@@ -377,7 +377,7 @@ class ConsoleClient:
         if "attrs" not in templates:
             templates["attrs"] = {}
         if "target" not in templates:
-            templates["target"] = []
+            templates["target"] = ["*.txt", "*.md", "*.markdown"]
         if "hook" not in templates:
             templates["hook"] = {}
 
@@ -517,8 +517,7 @@ def ask_ai(prompt):
     completion = client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        timeout=20
-    )
+        timeout=20)
     try:
         return completion.choices[0].message.content
     except Exception as e:
