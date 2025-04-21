@@ -352,10 +352,8 @@ class TextManager:
 
             # prompt or chat tagがレスポンスに入っていた時に、
             # その部分を削除する
-            if result_kind == 'prompt':
-                response = TextManager.safe_text(response, 'prompt')
-            elif result_kind == 'chat':
-                response = TextManager.safe_text(response, 'chat')
+            response = TextManager.safe_text(response, 'prompt')
+            response = TextManager.safe_text(response, 'chat')
             
             self.text = self.text.replace(tag, f"{response}")
             self._save_text()
