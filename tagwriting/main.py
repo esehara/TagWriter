@@ -4,6 +4,7 @@ import re
 import time
 import requests
 import datetime
+import subprocess
 from pathlib import Path
 import yaml
 import click
@@ -340,6 +341,21 @@ class ConsoleClient:
     def __init__(self):
         self.console = Console()
 
+    def run_shell_command(self, command):
+        """
+        任意のシェルコマンドを実行し、結果を表示する
+        """
+        try:
+            result = subprocess.run(command, shell=False, capture_output=True, text=True)
+            if result.stdout:
+                self.console.print(f"[cyan]stdout:[/cyan]\n{result.stdout}")
+            if result.stderr:
+                self.console.print(f"[red]stderr:[/red]\n{result.stderr}")
+            return result.returncode
+        except Exception as e:
+            self.console.print(f"[red]Command execution failed: {e}[/red]")
+            return -1
+
     def _build_templates(self, templates):
         """ 
         Default templates param
@@ -392,6 +408,7 @@ class ConsoleClient:
             prompt, response = result
             self.console.print(f"[bold green]Prompt:[/bold green] {prompt}")
             self.console.print(f"[bold green]Response:[/bold green] {response}")
+            self.run_shell_command(self.templates["hook"]["text_generate_end"])
 
     def inloop(self):
         self.console.print(f"[green]Start clients... [/green]", justify="center")
