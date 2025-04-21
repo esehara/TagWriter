@@ -309,29 +309,40 @@ class TextManager:
                 return None
 
             tag, prompt, attrs = result
-            prompt_text = self.text.replace(tag, "@@processing@@")
 
+            # ---- Context ----
+            # <prompt> or <chat>によってコンテキスト戦略を変える。
+            # <prompt>タグの場合は、
+            #   -> self.textをコンテキストとして使用する
+            # <chat>タグの場合は、
+            #   -> コンテキストをなくす("@@processing@@")だけにする
+            if result_kind == 'prompt':
+                prompt_text = self.text.replace(tag, "@@processing@@")
+            else:
+                # <chat>タグの場合は、全てのコンテキストを除去する
+                #   -> @@processing@@をそのまま使用
+                prompt_text = "@@processing@@"
             # ---- Include ----
             prompt_text = TextManager.replace_include_tags(self.filepath, prompt_text)
             # Includeエラーが起きたときは一回ストップする
             if prompt_text is None:
                 return None
-            attrs_rules = self._build_attrs_rules(attrs)
+            # Promptの内部にあるincludeタグも置換する
+            prompt = TextManager.replace_include_tags(self.filepath, prompt)
+            if prompt is None:
+                return None
 
+            attrs_rules = self._build_attrs_rules(attrs)
             # ---- URL ----
-            prompt_text = self.replace_url_tags(prompt_text)
+            # TODO: もう少し綺麗な実装にしてから考える
+            # prompt_text = self.replace_url_tags(prompt_text)
+
             # ---- Wikipedia ----
-            wikipedia_tags = self.fetch_wikipedia_tags(prompt_text)
+            wikipedia_tags = self.fetch_wikipedia_tags(context)
+            wikipedia_tags = wikipedia_tags | self.fetch_wikipedia_tags(prompt)
             # Wikipedia記事の取得結果を反映
-            prompt_text = TextManager.prepend_wikipedia_sources(prompt_text, wikipedia_tags)
-            # ---- LLM ----
-            if result_kind == 'prompt':
-                context = prompt_text
-            else:
-                # <chat>タグの場合は、全てのコンテキストを除去する
-                #   -> @@processing@@をそのまま使用
-                context = "@@processing@@"
-            
+            prompt_text = TextManager.prepend_wikipedia_sources(context, wikipedia_tags)
+
             response = ask_ai(self.templates["prompt"].format(
                 prompt=prompt, context=context, attrs_rules=attrs_rules))
 
