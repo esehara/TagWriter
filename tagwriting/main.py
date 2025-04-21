@@ -106,7 +106,7 @@ class TextManager:
             f.write(self.text)
 
     @classmethod
-    def safe_text(cls, response):
+    def safe_text(cls, response, tag):
         """
         LLMのresponseに属性付き<prompt>タグも含めない
     
@@ -117,8 +117,8 @@ class TextManager:
             ...
         従って: promptにはpromptが含まれず、確実に停止することを保証する。            
         """
-        response = re.sub(r'<prompt(:[\w:]+)?>', '', response)
-        response = response.replace('</prompt>', '')
+        response = re.sub(rf'<{tag}(:[\w:]+)?>', '', response)
+        response = response.replace(f'</{tag}>', '')
         return response
 
     @classmethod
@@ -327,7 +327,13 @@ class TextManager:
             if response is None:
                 return None
 
-            response = TextManager.safe_text(response)
+            # prompt or chat tagがレスポンスに入っていた時に、
+            # その部分を削除する
+            if result_kind == 'prompt':
+                response = TextManager.safe_text(response, 'prompt')
+            elif result_kind == 'chat':
+                response = TextManager.safe_text(response, 'chat')
+            
             self.text = self.text.replace(tag, f"{response}")
             self._save_text()
             self.append_history(prompt, response)
