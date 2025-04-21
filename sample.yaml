@@ -30,6 +30,7 @@ target:
 
 ignore:
   - "README.md"
+  - "README_en.md"
   - "sandbox/test_not_target.md"
   - ".git"
 

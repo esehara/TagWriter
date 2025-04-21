@@ -90,7 +90,7 @@ def test_prepend_wikipedia_sources():
     ]
     result = TextManager.prepend_wikipedia_sources(prompt, sources)
     print(result)
-    assert result.startswith("---\n\n# Sources:\n\n")
+    assert result.startswith("---\n\n# Wikipedia resources:\n\n")
     assert "OpenAI" in result and "イーロン・マスク" in result
     assert result.endswith(prompt)
 
@@ -98,3 +98,26 @@ def test_prepend_wikipedia_sources():
     sources = []
     result = TextManager.prepend_wikipedia_sources(prompt, sources)
     assert result == prompt
+
+def test_replace_include_tags(tmp_path):
+    # テスト用ファイルを作成
+    include_file = tmp_path / "include_testdata.md"
+    include_file.write_text("INCLUDED_CONTENT")
+    # <include> タグを含むテキスト
+    test_text = f"before <include>{include_file.name}</include> after"
+    # 絶対パスでファイルを指定
+    result = TextManager.replace_include_tags(str(include_file), test_text)
+    assert result == f"before INCLUDED_CONTENT after"
+
+    # ファイルが存在しない場合
+    missing_text = "before <include>notfound.md</include> after"
+    result = TextManager.replace_include_tags(str(include_file), missing_text)
+    # エラー時はNoneを返すので、Noneまたは元テキストのままならOK
+    assert result is None or result == missing_text
+
+    # 複数の<include>タグ
+    multi_file = tmp_path / "multi.md"
+    multi_file.write_text("A")
+    test_text = f"<include>{multi_file.name}</include> <include>{include_file.name}</include>"
+    result = TextManager.replace_include_tags(str(multi_file), test_text)
+    assert result == "A INCLUDED_CONTENT"
