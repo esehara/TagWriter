@@ -341,12 +341,12 @@ class ConsoleClient:
     def __init__(self):
         self.console = Console()
 
-    def run_shell_command(self, command):
+    def run_shell_command(self, command, params={}):
         """
         任意のシェルコマンドを実行し、結果を表示する
         """
         try:
-            result = subprocess.run(command, shell=False, capture_output=True, text=True)
+            result = subprocess.run(command.format(**params), shell=False, capture_output=True, text=True)
             if result.stdout:
                 self.console.print(f"[cyan]stdout:[/cyan]\n{result.stdout}")
             if result.stderr:
@@ -378,6 +378,8 @@ class ConsoleClient:
             templates["attrs"] = {}
         if templates["target"] is None:
             templates["target"] = []
+        if templates["hook"] is None:
+            templates["hook"] = {}
 
         # change absolute path for ignore file
         templates["ignore"] = [os.path.abspath(p) for p in templates["ignore"]]
@@ -408,7 +410,11 @@ class ConsoleClient:
             prompt, response = result
             self.console.print(f"[bold green]Prompt:[/bold green] {prompt}")
             self.console.print(f"[bold green]Response:[/bold green] {response}")
-            self.run_shell_command(self.templates["hook"]["text_generate_end"])
+
+            # "text_generate_end" が存在する場合のみコマンド実行
+            if "text_generate_end" in self.templates["hook"]:
+                self.run_shell_command(self.templates["hook"]["text_generate_end"],
+                    {"filepath": filepath})
 
     def inloop(self):
         self.console.print(f"[green]Start clients... [/green]", justify="center")

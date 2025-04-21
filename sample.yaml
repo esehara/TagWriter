@@ -9,9 +9,9 @@ prompt: |
   user prompt: 
   {prompt}
 
-hook:
-  text_generate_end: |
-    powershell.exe "Import-Module BurntToast; New-BurntToastNotification -Text 'テキスト生成し終わりました', 'テキストファイルを確認してください'"
+# hook:
+#  text_generate_end: |
+#    powershell.exe "Import-Module BurntToast; New-BurntToastNotification -Text 'テキスト生成し終わりました', '{filepath}を確認してください'"
 
 attrs:
   bullet: "箇条書きで出力する"

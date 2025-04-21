@@ -126,7 +126,7 @@ Internally, TagWriting works as follows:
 2. Detect file changes in the directory
 3. Read the file
 4. Fire event
-5. Detect template tags (e.g., `<summary></summary>`)
+5. Detect template tags (e.g., `<prompt>文章全体を要約する</prompt>`)
 6. Convert template tags to prompt tags (e.g., `<prompt>Summarize the entire text</prompt>`)
 7. Detect prompt tags (e.g., `<prompt>Summarize the entire text</prompt>`)
 8. Mark the conversion part of the prompt (e.g., `@@prompt@@`)
@@ -227,7 +227,7 @@ tags:
   - tag: "summary"
     format: "Summarize the entire text"
   - tag: "profile"
-    format: "Generate a profile for a person. Enclose each item except the name with <detail></detail>: {prompt}"
+    format: "Generate a profile for a person. Enclose each item except the name with <prompt>詳細に説明する: </prompt>: {prompt}"
   - tag: "prm"
     format: "{prompt}"
 ```
@@ -249,7 +249,7 @@ tagwriting ./foobar/path --templates sample.yaml
 In a Markdown file:
 
 ```markdown
-<detail>Please explain this story.</detail>
+<prompt>詳細に説明する: Please explain this story.</prompt>
 ```
 
 will be automatically converted according to the template to:
