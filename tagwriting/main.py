@@ -103,6 +103,7 @@ class TextManager:
                 if "change" not in tag:
                     tag["change"] = "prompt" 
                 elif tag["change"] != "prompt" and tag["change"] != "chat":
+                    print(f"[warning] Invalid tag change: {tag['change']}")
                     tag["change"] = "prompt" 
                 replace_tags = f"<{tag['change']}{attrs_text}>{tag['format']}</{tag['change']}>".format(prompt=prompt)
                 self.text = self.text.replace(tags, replace_tags)

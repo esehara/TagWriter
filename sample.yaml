@@ -16,6 +16,7 @@ prompt: |
 attrs:
   bullet: "箇条書きで出力する"
   remain: "ユーザープロンプトを`> `付きで残す"
+  detail: "出来るだけ詳しく説明する"
 
 history:
   file: "{filename}.history.md"
@@ -36,11 +37,11 @@ ignore:
   - ".git"
 
 tags:
-  - tag: "detail"
-    format: "詳細に説明する: {prompt}"
-    change: "prompt"
   - tag: "summary"
     format: "文章全体を要約する"
   - tag: "dictionary"
     format: "意味を調べてください: {prompt}"
+    change: "chat"
+  - tag: "emoji"
+    format: "Unicodeのemojiにして: {prompt}"
     change: "chat"
