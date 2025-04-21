@@ -92,7 +92,19 @@ class TextManager:
                 tags, prompt, attrs = result
                 attrs_text = ":".join(attrs) if attrs else ""
                 attrs_text = f":{attrs_text}" if attrs_text != "" else ""
-                replace_tags = f"<prompt{attrs_text}>{tag['format']}</prompt>".format(prompt=prompt)
+
+                # tagをsafeにする
+                # tag['change']が設定されていない場合、または
+                # tag['change']が"prompt"または"chat"でない場合は、"prompt"にする
+                # 言い換えると、tag['change']は他のtagには変換できない
+                # 
+                # reason:
+                #   -> tagはpromptまたはchatにしないと循環参照が起きる可能性があるため
+                if "change" not in tag:
+                    tag["change"] = "prompt" 
+                elif tag["change"] != "prompt" and tag["change"] != "chat":
+                    tag["change"] = "prompt" 
+                replace_tags = f"<{tag['change']}{attrs_text}>{tag['format']}</{tag['change']}>".format(prompt=prompt)
                 self.text = self.text.replace(tags, replace_tags)
                 self._save_text()
                 return
