@@ -311,7 +311,6 @@ class TextManager:
             wikipedia_tags = self.fetch_wikipedia_tags(prompt_text)
             # Wikipedia記事の取得結果を反映
             prompt_text = TextManager.prepend_wikipedia_sources(prompt_text, wikipedia_tags)
-
             # ---- LLM ----
             if result_kind == 'prompt':
                 context = prompt_text
@@ -319,7 +318,7 @@ class TextManager:
                 # <chat>タグの場合は、全てのコンテキストを除去する
                 #   -> @@processing@@をそのまま使用
                 context = "@@processing@@"
-
+            
             response = ask_ai(self.templates["prompt"].format(
                 prompt=prompt, context=context, attrs_rules=attrs_rules))
 
