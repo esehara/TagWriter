@@ -507,7 +507,12 @@ class ConsoleClient:
         self.console.rule(f"[bold yellow]File changed: {os.path.basename(filepath)}[/bold yellow]")
         if filepath == self.templates["selfpath"]:
             self.console.print(f"[bold yellow]Hot reload templates from {filepath}[/bold yellow]")
-            self.load_templates(self.templates["selfpath"])
+            # 編集中の壊れたファイルを読み込む場合があるので、Exceptionをキャッチしておいて、
+            # クライアントが落ちないようにする
+            try:
+                self.load_templates(self.templates["selfpath"])
+            except Exception as e:
+                self.console.print(f"[yellow][Warning]Failed to reload templates: {e}[/yellow]")
         else:            
             text_manager = TextManager(filepath, self.templates)
             result = text_manager.extract_prompt_tag()
