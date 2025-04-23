@@ -413,7 +413,8 @@ class ConsoleClient:
             self.console.print(f"[red]Command execution failed: {e}[/red]")
             return -1
 
-    def _build_templates(self, templates):
+    @classmethod
+    def build_templates(cls, templates):
         """ 
         Default templates param
 
@@ -446,15 +447,15 @@ class ConsoleClient:
         templates["ignore"] = [os.path.abspath(p) for p in templates["ignore"]]
         templates["target"] = [os.path.abspath(p) for p in templates["target"]]
 
+        templates["selfpath"] = None
         return templates
 
-    def start(self, dirpath, templates):
+    def start(self, dirpath, yaml_path):
         self.console.rule("[bold blue]Tagwriting CLI[/bold blue]")
         self.console.print(f"[bold magenta]Hello, Tagwriting CLI![/bold magenta] :sparkles:", justify="center")
         version = importlib.metadata.version("tagwriting")
         self.console.print(f"[yellow]Version: {version}[/yellow]", justify="center")
-        
-        self.templates = self._build_templates(templates)
+        self.load_templates(yaml_path)
 
         # use absolute path
         dirpath = os.path.abspath(dirpath)
@@ -464,24 +465,36 @@ class ConsoleClient:
             return
         self.dirpath = dirpath
         self.inloop()
-        
+
+    def load_templates(self, yaml_path):
+        templates = None
+        if yaml_path:
+            with open(yaml_path, 'r', encoding='utf-8') as f:
+                templates = yaml.safe_load(f)
+        self.templates = ConsoleClient.build_templates(templates)
+        self.templates["selfpath"] = yaml_path
+
     def on_change(self, filepath):
         self.console.rule(f"[bold yellow]File changed: {os.path.basename(filepath)}[/bold yellow]")
-        text_manager = TextManager(filepath, self.templates)
-        result = text_manager.extract_prompt_tag()
-        if result is not None:
-            prompt, response = result
-            self.console.print(f"[bold green]Prompt:[/bold green] {prompt}")
-            self.console.print(f"[bold green]Response:[/bold green] {response}")
+        if filepath == self.templates["selfpath"]:
+            self.console.print(f"[bold yellow]Hot reload templates from {filepath}[/bold yellow]")
+            self.load_templates(self.templates["selfpath"])
+        else:            
+            text_manager = TextManager(filepath, self.templates)
+            result = text_manager.extract_prompt_tag()
+            if result is not None:
+                prompt, response = result
+                self.console.print(f"[bold green]Prompt:[/bold green] {prompt}")
+                self.console.print(f"[bold green]Response:[/bold green] {response}")
 
-            # "text_generate_end" が存在する場合のみコマンド実行
-            if "text_generate_end" in self.templates["hook"]:
-                self.run_shell_command(self.templates["hook"]["text_generate_end"],
-                    {"filepath": filepath})
+                # "text_generate_end" が存在する場合のみコマンド実行
+                if "text_generate_end" in self.templates["hook"]:
+                    self.run_shell_command(self.templates["hook"]["text_generate_end"],
+                        {"filepath": filepath})
 
     def inloop(self):
         self.console.print(f"[green]Start clients... [/green]", justify="center")
-        event_handler = FileChangeHandler(self.dirpath, self.on_change, self.templates["ignore"], self.templates["target"])
+        event_handler = FileChangeHandler(self.dirpath, self.on_change, self.templates)
         observer = Observer()
         observer.schedule(event_handler, path=os.path.dirname(self.dirpath), recursive=True)
         observer.start()
@@ -519,14 +532,15 @@ class FileChangeHandler(FileSystemEventHandler):
                     return True
         return False
 
-    def __init__(self, dirpath, on_change, ignore, target, debounce_interval=2.0):
+    def __init__(self, dirpath, on_change, templates,debounce_interval=2.0):
         super().__init__()
         self.dirpath = os.path.abspath(dirpath)
         self.on_change = on_change
         self._last_called = 0
         self._debounce_interval = debounce_interval
-        self._ignore = ignore
-        self._target = target
+        self._ignore = templates["ignore"]
+        self._target = templates["target"]
+        self._selfpath = templates["selfpath"]
 
     def _is_debounce(self):
         now = time.time()
@@ -559,7 +573,8 @@ class FileChangeHandler(FileSystemEventHandler):
     def on_modified(self, event):
         if self.is_ignored(event.src_path):
             return
-        if not self.is_target(event.src_path):
+       # event.src_pathがtemplatesファイルでなく、かつ対象ファイルでない
+        if not self.is_target(event.src_path) and event.src_path != self._selfpath:
             return
         if not self.is_text_file(event.src_path):
             return
@@ -593,12 +608,10 @@ def ask_ai(prompt):
 @click.option('--templates', 'yaml_path', default=None, help='Template yaml file path')
 def main(dirpath, yaml_path):
     load_dotenv(dotenv_path=Path.cwd() / ".env", override=True)
-    templates = None
-    if yaml_path:
-        with open(yaml_path, 'r', encoding='utf-8') as f:
-            templates = yaml.safe_load(f)
+    if yaml_path is not None:
+        yaml_path = os.path.abspath(yaml_path)
     client = ConsoleClient()
-    client.start(dirpath, templates)
+    client.start(dirpath, yaml_path)
 
 
 if __name__ == "__main__":

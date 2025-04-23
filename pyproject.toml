@@ -1,6 +1,6 @@
 [project]
 name = "tagwriting"
-version = "0.1.9"
+version = "0.2.0"
 description = "A CLI tool for tag-based text processing."
 authors = [
     { name = "esehara", email = "esehara@gmail.com" }

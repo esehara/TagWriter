@@ -37,6 +37,8 @@ ignore:
   - ".git"
 
 tags:
+  - tag: "ochimpo"
+    format: "次の文章をオーグ語`ochimpo`で翻訳してください: {prompt}"
   - tag: "summary"
     format: "文章全体を要約する"
   - tag: "dictionary"
