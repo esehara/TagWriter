@@ -600,7 +600,8 @@ class FileChangeHandler(FileSystemEventHandler):
             return False
 
     def on_modified(self, event):
-        print(f"[white][event]File modified: {event.src_path}[/white]")
+        # 流石に全部のmodifiedを出力するのは冗長なのでコメントアウト
+        # print(f"[white][event]File modified: {event.src_path}[/white]")
         if self.is_ignored(event.src_path):
             return
        # event.src_pathがtemplatesファイルでなく、かつ対象ファイルでない
