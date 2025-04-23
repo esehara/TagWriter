@@ -561,7 +561,7 @@ class FileChangeHandler(FileSystemEventHandler):
                     return True
         return False
 
-    def __init__(self, dirpath, on_change, templates, debounce_interval=2.0):
+    def __init__(self, dirpath, on_change, templates, debounce_interval=0.5):
         super().__init__()
         self.dirpath = os.path.abspath(dirpath)
         self.on_change = on_change
@@ -600,6 +600,7 @@ class FileChangeHandler(FileSystemEventHandler):
             return False
 
     def on_modified(self, event):
+        print(f"[white][event]File modified: {event.src_path}[/white]")
         if self.is_ignored(event.src_path):
             return
        # event.src_pathがtemplatesファイルでなく、かつ対象ファイルでない
