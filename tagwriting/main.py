@@ -561,7 +561,7 @@ class FileChangeHandler(FileSystemEventHandler):
                     return True
         return False
 
-    def __init__(self, dirpath, on_change, templates,debounce_interval=2.0):
+    def __init__(self, dirpath, on_change, templates, debounce_interval=2.0):
         super().__init__()
         self.dirpath = os.path.abspath(dirpath)
         self.on_change = on_change
@@ -606,6 +606,8 @@ class FileChangeHandler(FileSystemEventHandler):
         if not self.is_target(event.src_path) and event.src_path != self._selfpath:
             return
         if not self.is_text_file(event.src_path):
+            return
+        if not self._is_debounce():
             return
         self.on_change(event.src_path)
 
