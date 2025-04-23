@@ -1,4 +1,5 @@
 import fnmatch
+from operator import truediv
 import os
 import re
 import time
@@ -112,12 +113,19 @@ class TextManager:
                 return
 
     def _load_text(self):
-        with open(self.filepath, 'r', encoding='utf-8') as f:
-            self.text = f.read()
+        try:
+            with open(self.filepath, 'r', encoding='utf-8') as f:
+                self.text = f.read()
+        except Exception as e:
+            print(f"[red][Error]: {e}")
+            self.text = None
 
     def _save_text(self):
-        with open(self.filepath, 'w', encoding='utf-8') as f:
-            f.write(self.text)
+        try:
+            with open(self.filepath, 'w', encoding='utf-8') as f:
+                f.write(self.text)
+        except Exception as e:
+            print(f"[red][Error]: {e}") 
 
     @classmethod
     def safe_text(cls, response, tag):
@@ -285,8 +293,17 @@ class TextManager:
         return rules
 
     def extract_prompt_tag(self):
+        # backup_text:
+        #   -> <prompt> or <chat>タグを置換する前のself.text
+        #   LLMとの接続が切断されたときに元のテキストに戻すために使用
+        self._load_text()
+
+        # loadが失敗した場合:
+        #   self.text = None -> 処理を止める
+        if self.text is None:
+            return None
+        backup_text = self.text
         try:
-            self._load_text()
             self._pre_prompt()
             """
             Process:
@@ -317,6 +334,10 @@ class TextManager:
             #   -> self.textをコンテキストとして使用する
             # <chat>タグの場合は、
             #   -> コンテキストをなくす("@@processing@@")だけにする
+
+            self.text = self.text.replace(tag, "@@processing@@", 1)
+            self._save_text()
+
             if result_kind == 'prompt':
                 # 同じ<prompt>hoge</prompt>というタグが出てくる可能性があるので、
                 # 1回だけ置換する
@@ -351,6 +372,8 @@ class TextManager:
 
             # responseがNoneのときは、中断
             if response is None:
+                self.text = backup_text
+                self._save_text()
                 return None
 
             # prompt or chat tagがレスポンスに入っていた時に、
@@ -358,11 +381,17 @@ class TextManager:
             response = TextManager.safe_text(response, 'prompt')
             response = TextManager.safe_text(response, 'chat')
             
-            self.text = self.text.replace(tag, f"{response}", 1)
+            # ObsidianのようなHard save - loadするeditor向け対応
+            self._load_text()
+            self.text = self.text.replace("@@processing@@", f"{response}", 1)
             self._save_text()
             self.append_history(prompt, response)
             return (prompt, response)
         except Exception as e:
+            # エラーが発生した場合:
+            #  -> backup_textに差し戻す処理を挟む
+            self.text = backup_text
+            self._save_text()
             print(f"[red][Error]: {e}")
             return None
 
@@ -595,7 +624,7 @@ def ask_ai(prompt):
     completion = client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        timeout=20)
+        timeout=100)
     try:
         return completion.choices[0].message.content
     except Exception as e:
