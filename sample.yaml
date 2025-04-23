@@ -1,12 +1,12 @@
 prompt: |
-  あなたの回答はcontext内の`@@processing@@`と置換されます。コンテキストの整合性に合わせてテキストを出力してください。
+  あなたの回答はcontext内の`@@processing@@`と置換されます。前後の文章（テキスト）との整合性を合わせ、テキストを出力してください。
   Rule:
    - `@@processing@@`は貴方の解答に含めないでください。
-   - 解説や説明を含めず、user promptに直接回答してください。
+   - 解説や説明、返事を含めず、user promptに直接回答してください。
   {attrs_rules}
   context:
   {context}
-  user prompt: 
+  user prompt:
   {prompt}
 
 # hook:
@@ -14,17 +14,26 @@ prompt: |
 #    powershell.exe "Import-Module BurntToast; New-BurntToastNotification -Text 'テキスト生成し終わりました', '{filepath}を確認してください'"
 
 attrs:
-  bullet: "箇条書きで出力する"
-  remain: "ユーザープロンプトを`> `付きで残す"
+  bullet: |
+    箇条書きで出力する。
+    ただし、Markdownの段落が上下にあるときは、そのMarkdownの段落に合わせること。
+  remain: |
+    user promptを`> `付きで残す。
+    ただし、contextは削除する。
   detail: "出来るだけ詳しく説明する"
+  talking: "会話劇として出力する"
+  academic: "学術的な記述で出力する"
 
 history:
-  file: "{filename}.history.md"
+  file: "./{filename}.history.md"
   template: |
     ---
-    Prompt: {prompt}
-    Result: {result}
-    Timestamp: {timestamp}
+    **Prompt**: 
+    {prompt}
+    **Result**: 
+    {result}
+    **Timestamp**: 
+    {timestamp}
 
 target:
   - "*.md"
@@ -37,8 +46,15 @@ ignore:
   - ".git"
 
 tags:
-  - tag: "ochimpo"
-    format: "次の文章をオーグ語`ochimpo`で翻訳してください: {prompt}"
+  - tag: "rewrite"
+    format: "次の文章を書きなおしてください: {prompt}"
+  - tag: "whatif"
+    format: "次の文章に関して、「そうである」と仮定した場合に出てくる帰結を、羅列してみてください: {prompt}"
+  - tag: "question"
+    format: |
+      次の文章に疑問を投げかける疑問文を作成し、<whatif:remain></whatif>で囲みなさい
+      例「もし彼が〇〇ではないとしたら？」:
+      {prompt}
   - tag: "summary"
     format: "文章全体を要約する"
   - tag: "dictionary"
@@ -54,5 +70,5 @@ tags:
     format: "次の文・単語を自然な言い回しに変えてください: {prompt}"
     change: "chat"
   - tag: "example"
-    format: "次の文・単語を使った例文を考えてください: {prompt}"
-    change: "chat"
+    format: "次の具体例を挙げてください: {prompt}"
+    change: "prompt"

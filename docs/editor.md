@@ -1,4 +1,4 @@
-# ✏️Tagwriting Editor Review
+# ✏️ Tagwriting Editor Assessment
 
 ## ✍️ Editor
 
@@ -12,6 +12,8 @@
   - 軽量で拡張性が高く、プラグインで機能を自由にカスタマイズできる人気のエディタ。他よりはリロードはもっさりしているが、出来る。
 - Lite XL: 〇
   - Lite XLは、軽量で高速な操作が可能な、Luaでカスタマイズできるテキストエディタ。軽くAuto reloadしてくれる。
+- Yank Note: △
+  - マークダウンエディタ。DialogでReload確認するため、リアルタイムとまではいかない。
 
 ## 📝Note taking apps
 
