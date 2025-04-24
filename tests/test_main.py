@@ -96,15 +96,15 @@ def test_prepend_wikipedia_sources():
         ("OpenAI", "OpenAIは人工知能の研究所です。"),
         ("イーロン・マスク", "イーロン・マスクは実業家です。"),
     ]
-    result = TextManager.prepend_wikipedia_sources(prompt, sources)
+    result = TextManager.prepend_wikipedia_sources(sources)
     assert result.startswith("## OpenAI\n\nOpenAIは人工知能の研究所です。")
     assert "OpenAI" in result and "イーロン・マスク" in result
     assert result.endswith("\n\nイーロン・マスクは実業家です。\n\n")
 
     # 2. sourcesが空
     sources = []
-    result = TextManager.prepend_wikipedia_sources(prompt, sources)
-    assert result == prompt
+    result = TextManager.prepend_wikipedia_sources(sources)
+    assert result == ""
 
 def test_replace_include_tags(tmp_path):
     # テスト用ファイルを作成

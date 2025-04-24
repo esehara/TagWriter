@@ -216,21 +216,19 @@ class TextManager:
             return text
 
     @classmethod
-    def prepend_wikipedia_sources(cls, prompt_text, wikipedia_sources):
+    def prepend_wikipedia_sources(cls, wikipedia_sources):
         """
         wikipedia_sources: Set[Tuple[str, str or None]]
           -> return: str
         Wikipediaのタグもここで消去する。
         """
         if not wikipedia_sources:
-            return prompt_text
+            return ""
 
         wikipedia_resources = ""
         for title, extract in wikipedia_sources:
             if extract:
                 wikipedia_resources += f"## {title}\n\n{extract}\n\n"
-
-        # chatプロンプトが存在しない場合:
         return wikipedia_resources
 
     def fetch_wikipedia_tags(self, text):
@@ -331,7 +329,7 @@ class TextManager:
         wikipedia_tags = self.fetch_wikipedia_tags(context)
         wikipedia_tags = wikipedia_tags | self.fetch_wikipedia_tags(prompt)
         # Wikipedia記事の取得結果を反映
-        return TextManager.prepend_wikipedia_sources(prompt, wikipedia_tags)
+        return TextManager.prepend_wikipedia_sources(wikipedia_tags)
 
     def extract_prompt_tag(self):
         # backup_text:
