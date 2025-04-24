@@ -51,18 +51,21 @@ def verbose_print(msg):
         print(msg)
 
 class TextManager:
-    def __init__(self, filepath, templates):
+    def __init__(self, filepath, templates, history):
         """
         filepath: str = "foobar.md"
         templates: list[dict] = [{"tag": "tag_name", "format": "prompt formt"}]
            - example: [{"tag": "summary",  "format": "summarize: {prompt}"}]
+        history:
+           - example: {"previous_prompt": "", "previous_response": ""}
         """
         self.filepath = os.path.abspath(filepath)
-
+        self.history = history
         if templates is None:
             templates = []
         self.templates = templates
         self.url_catch = {}
+
 
     @classmethod
     def extract_tag_contents(cls, tag_name, text):
@@ -343,6 +346,15 @@ class TextManager:
             return None
         backup_text = self.text
         try:
+            # simple_merge
+            # もし読み込んだファイルに@@processing@@があった場合、前回の結果を挟み込む
+            if self.templates['config'].get('simple_merge', False):
+                if "@@processing@@" in self.text:
+                    print("[green][bold][Processs][/bold] find `@@processing@@`. Simple merge. [/green]")
+                    print(f"[green][bold][Processs][/bold] >> {self.history['previous_response']}[/green]")
+                    self.text = self.text.replace("@@processing@@", f"{self.history['previous_response']}")
+                    self._save_text()
+                    return None
             self._pre_prompt()
             """
             Process:
@@ -367,6 +379,15 @@ class TextManager:
 
             tag, prompt, attrs = result
 
+            # Safety Undo Check
+            # -> config.yamlのconfig.duplicate_promptを参照
+            # -> 以前と同じPromptが入ってきた場合、実行を止める
+            if self.templates["config"].get('duplicate_prompt', False):
+                if prompt == self.history["previous_prompt"]:
+                    print("[green][bold][Processs][/bold] Duplicate prompt detected. Skipping.[/green]")
+                    print(f"[green][bold][Processs][/bold] Previous prompt: {self.history['previous_prompt']}[/green]")
+                    return None
+
             # ---- Context ----
             # <prompt> or <chat>によってコンテキスト戦略を変える。
             # <prompt>タグの場合は、
@@ -385,6 +406,7 @@ class TextManager:
                 # <chat>タグの場合は、全てのコンテキストを除去する
                 #   -> @@processing@@をそのまま使用
                 context = "@@processing@@"
+            
             # ---- Include ----
             context = TextManager.replace_include_tags(self.filepath, context)
             # Includeエラーが起きたときは一回ストップする
@@ -463,6 +485,10 @@ class TextManager:
 class ConsoleClient:
     def __init__(self):
         self.console = Console()
+        self.history = {
+            "previous_prompt": "",
+            "previous_response": ""
+        }
 
     def run_shell_command(self, command, params={}):
         """
@@ -513,6 +539,14 @@ class ConsoleClient:
         templates["ignore"] = [os.path.abspath(p) for p in templates["ignore"]]
         templates["target"] = [os.path.abspath(p) for p in templates["target"]]
 
+        # default config
+        if "config" not in templates:
+            templates["config"] = {}
+        if "duplicate_prompt" not in templates["config"]:
+            templates["config"]["duplicate_prompt"] = False
+        if "simple_merge" not in templates["config"]:
+            templates["config"]["simple_merge"] = False
+
         templates["selfpath"] = None
         return templates
 
@@ -551,12 +585,16 @@ class ConsoleClient:
             except Exception as e:
                 self.console.print(f"[yellow][Warning]Failed to reload templates: {e}[/yellow]")
         else:            
-            text_manager = TextManager(filepath, self.templates)
+            text_manager = TextManager(filepath, self.templates, self.history)
             result = text_manager.extract_prompt_tag()
             if result is not None:
                 prompt, response = result
                 self.console.print(f"[bold green]Prompt:[/bold green] {prompt}")
                 self.console.print(f"[bold green]Response:[/bold green] {response}")
+
+                # update history
+                self.history["previous_prompt"] = prompt
+                self.history["previous_response"] = response
 
                 # "text_generate_end" が存在する場合のみコマンド実行
                 if "text_generate_end" in self.templates["hook"]:

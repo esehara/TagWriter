@@ -85,3 +85,12 @@ tags:
   - tag: "example"
     format: "次の具体例を挙げてください: {prompt}"
     change: "prompt"
+
+config:
+  # duplicate prompt check
+  # -> 以前と同じプロンプトが入ってきたら実行しない
+  # -> これは、auto saveに対応しているエディタでUndoすると同じプロンプトが何度も発行されるため
+  duplicate_prompt: true
+  # simple merge
+  # -> 2回目以降のファイルに`@@processing@@`があった場合、前回の結果を挟み込む
+  simple_merge: true
