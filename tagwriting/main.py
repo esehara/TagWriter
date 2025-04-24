@@ -439,6 +439,7 @@ class TextManager:
             # その部分を削除する
             response = TextManager.safe_text(response, 'prompt')
             response = TextManager.safe_text(response, 'chat')
+            response = response.replace("@@processing@@", "", 1)
             
             # ObsidianのようなHard save - loadするeditor向け対応
             self._load_text()
