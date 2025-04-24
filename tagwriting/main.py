@@ -283,7 +283,8 @@ class TextManager:
                 results.add((title, None))
         return results
 
-    def _build_attrs_rules(self, attrs) -> str:
+    @classmethod
+    def build_attrs_rules(cls, attrs, templates) -> str:
         """
         Build rules for attributes.
 
@@ -307,21 +308,24 @@ class TextManager:
         """
         rules = ""
         for attr in attrs:
-            if attr in self.templates["attrs"]:
+            if attr in templates["attrs"]:
                 # list or str
                 # listのときは、ルールをリスト化し、
                 # strのときは、そのままルールとして追加する
-                if isinstance(self.templates["attrs"][attr], list):
-                    for rule in self.templates["attrs"][attr]:
+                if isinstance(templates["attrs"][attr], list):
+                    for rule in templates["attrs"][attr]:
                         rules += f" - {rule}\n"
-                elif isinstance(self.templates["attrs"][attr], str):
-                    rules += f" - {self.templates['attrs'][attr]}\n"
+                elif isinstance(templates["attrs"][attr], str):
+                    rules += f" - {templates['attrs'][attr]}\n"
                 else:
                     print(f"[red][bold][Warning][/bold] Invalid attribute rule type: '{attr}'[/red]")
                     print(f"[red][bold][Warning][/bold] Attribute rule type must be list or str[/red]")
             else:
                 print(f"[red][bold][Warning][/bold] Attribute rule not defined: '{attr}'[/red]")
-        return rules
+        return rules        
+
+    def _build_attrs_rules(self, attrs) -> str:
+        return TextManager.build_attrs_rules(attrs, self.templates)
 
     def extract_prompt_tag(self):
         # backup_text:

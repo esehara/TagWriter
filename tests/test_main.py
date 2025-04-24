@@ -34,23 +34,30 @@ def test_extract_tag_contents_inner_tag():
 
 def test_safe_text_plain():
     text = "This is a plain response."
-    assert TextManager.safe_text(text) == "This is a plain response."
+    assert TextManager.safe_text(text, "prompt") == "This is a plain response."
 
 def test_safe_text_prompt():
     text = "<prompt>foobar</prompt>"
-    assert TextManager.safe_text(text) == "foobar"
+    assert TextManager.safe_text(text, "prompt") == "foobar"
 
 def test_safe_text_prompt_attr():
     text = "<prompt:funny>foobar</prompt>"
-    assert TextManager.safe_text(text) == "foobar"
+    assert TextManager.safe_text(text, "prompt") == "foobar"
 
 def test_safe_text_prompt_multi_attr():
     text = "<prompt:funny:detail>foobar</prompt>"
-    assert TextManager.safe_text(text) == "foobar"
+    assert TextManager.safe_text(text, "prompt") == "foobar"
 
 def test_safe_text_nested():
     text = "foo <prompt:funny>bar <prompt>baz</prompt> qux</prompt> end"
-    assert TextManager.safe_text(text) == "foo bar baz qux end"
+    assert TextManager.safe_text(text, "prompt") == "foo bar baz qux end"
+
+def test_safe_text_chat():
+    text = "<chat>hello chat</chat>"
+    assert TextManager.safe_text(text, tag="chat") == "hello chat"
+
+    text_multi = "foo <chat:info:meta>bar</chat> baz"
+    assert TextManager.safe_text(text_multi, tag="chat") == "foo bar baz"
 
 def test_match_patterns_glob():
     # tests/test_main.py should match '*.py'
@@ -121,3 +128,16 @@ def test_replace_include_tags(tmp_path):
     test_text = f"<include>{multi_file.name}</include> <include>{include_file.name}</include>"
     result = TextManager.replace_include_tags(str(multi_file), test_text)
     assert result == "A INCLUDED_CONTENT"
+
+def test_build_attrs_rules():
+    attrs = ["bullet", "style", "unknown"]
+    templates = {
+        "attrs": {
+            "bullet": ["bullet style", "Markdown style"],
+            "style": "plain style"
+        }
+    }
+    # unknownはテンプレートにないため警告が出るが、返り値には含まれない
+    expected = " - bullet style\n - Markdown style\n - plain style\n"
+    result = TextManager.build_attrs_rules(attrs, templates)
+    assert result == expected
