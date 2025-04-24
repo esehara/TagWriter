@@ -10,11 +10,11 @@ from pathlib import Path
 import yaml
 import click
 from dotenv import load_dotenv
-from openai import OpenAI
 from rich.console import Console
 from rich import print
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+from bs4 import BeautifulSoup
 import importlib.metadata
 
 DEFAULT_PROMPT = """
@@ -472,12 +472,15 @@ class TextManager:
             self._save_text()
             self.append_history(prompt, response)
             return (prompt, response)
-        except Exception as e:
+        except AttributeError as e:
             # エラーが発生した場合:
             #  -> backup_textに差し戻す処理を挟む
             self.text = backup_text
             self._save_text()
+
+            # backtrace output
             print(f"[red][Error]: {e}")
+            e.__traceback__.print_exc()
             return None
 
     def append_history(self, prompt, result):
@@ -731,25 +734,58 @@ class LLMSimpleClient:
         self.model = os.getenv("MODEL")
         self.filepath = env_filepath
 
+    def build_headers(self) -> dict:
+        return {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+    def build_payload(self, prompt) -> dict:
+        return {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "timeout": 100
+        }
+
+    def build_url(self) -> str:
+        return self.base_url + "/chat/completions"
+
     def ask_ai(self, prompt):
         if not self.api_key:
             raise RuntimeError(f"API_KEY not found in {self.filepath}. ")
-        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
-        verbose_print(f"[yellow]Prompt text: {prompt}[/yellow]")
-        completion = client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            timeout=100)
         try:
-            return completion.choices[0].message.content
-        except Exception as e:
-            print(f"[red][bold][Error][/bold] AI error: {e}[/red]")
+            completion = requests.post(
+                self.build_url(), headers=self.build_headers(), json=self.build_payload(prompt))
+            data = completion.json()
+            print(f"[yellow]Response: {data}[/yellow]")
+            # response['choices'][0]['message']['citations']
+            response =  data["choices"][0]["message"]["content"]
+            
+            # maybe Perplexity AI only
+            if  "citations" in data:
+                response += "\n\n"
+                response += "Sources: \n\n"
+                citations = data["citations"]
+                for i, citation in enumerate(citations, 1):
+                    title = HTMLClient.get_title(citation)
+                    response += f"{i}. [{title}]({citation})\n"
+            return response
+        except requests.exceptions.JSONDecodeError as e:
+            print(f"[red][bold][Error][/bold] JSONDecodeError:[/red]")
+            print(completion)
             return None
+
+class HTMLClient:
+    @classmethod
+    def get_title(cls, url):
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        return soup.title.string
 
 
 @click.command()
 @click.argument('dirpath')
-@click.option('--templates', 'yaml_path', default=None, help='Template yaml file path')
+@click.option('--templates', 'yaml_path', default=None, help='Template yaml file path')#
 def main(dirpath, yaml_path):
     if yaml_path is not None:
         yaml_path = os.path.abspath(yaml_path)
