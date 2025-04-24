@@ -7,7 +7,6 @@ import requests
 import datetime
 import subprocess
 from pathlib import Path
-from urllib.parse import urljoin
 import yaml
 import click
 from dotenv import load_dotenv
@@ -94,7 +93,7 @@ class TextManager:
           example: <prompt(gpt):funny>内容</prompt>
             -> ("<prompt:funny>内容</prompt>", "内容", ["funny"], "gpt")
 
-        recursive process:
+        [TODO] recursive process:
           example: <prompt>summarize: <prompt> Python language </prompt></prompt>
             -> <prompt>Python language</prompt>
             -> ("<prompt>Python language</prompt>", "Python language", [])
@@ -215,25 +214,22 @@ class TextManager:
           - テキストは何度も短期間で変換されるため、そのたびにURLを取得する必要はない。
           - URL先のテキストは、ローカルテキストの場合に比べて、より頻繁に変換される可能性は低い。
         """
-        verbose_print("[debug][Process] Replacing URL tags...")
         pattern = r'<url>(.*?)</url>'
         def replacer(match):
             url = match.group(1).strip()
-            verbose_print(f"[debug] URL found: {url}")
             if url in self.url_catch:
-                verbose_print(f"[debug] URL cached: {url}")
                 return self.url_catch[url]
             else:
-                verbose_print(f"[debug] URL not cached: {url}")
-                response = requests.get(url, timeout=10)
+                print(f"[green][Process] Fetching URL: {url}")
+                response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+                print(f"[green][Result] URL Response: {response}[/green]")
                 response.encoding = response.apparent_encoding
                 if response.status_code == 200:
-                    # HTMLならタグ除去（簡易）
-                    text = response.text
-                    if '<html' in text.lower():
-                        text = re.sub(r'<[^>]+>', '', text)
-                    self.url_catch[url] = text.strip()
-                    return text.strip()
+                    # HTML -> BeautifulSoup -> Text
+                    print(f"[green][Process] Converting HTML to Text[/green]")
+                    html_text = HTMLClient.html_to_text(response.text)
+                    self.url_catch[url] = html_text
+                    return html_text
                 else:
                     print(f"[url error: status_code={response.status_code}]")
                     return ""
@@ -267,14 +263,13 @@ class TextManager:
         Returns:
             Set[Tuple[str, str or None]]: (タイトル, 記事本文 or None) のセット
         """
-        verbose_print("[debug][Process] Fetching Wikipedia tags...")
+        print("[green][Process] Fetching Wikipedia tags...[/green]")
         pattern = r'<wikipedia>(.*?)</wikipedia>'
         titles = set(title.strip() for title in re.findall(pattern, text, flags=re.DOTALL))
         results = set()
         for title in titles:
             cache_key = f"wikipedia:{title}"
             if cache_key in self.url_catch:
-                verbose_print(f"[debug] Wikipedia cached: {title}")
                 extract = self.url_catch[cache_key]
                 results.add((title, extract))
                 continue
@@ -443,10 +438,14 @@ class TextManager:
                 return None
 
             attrs_rules = self._build_attrs_rules(attrs)
+ 
             # ---- URL ----
-            # TODO: もう少し綺麗な実装にしてから考える
-            # prompt_text = self.replace_url_tags(prompt_text)
+            prompt = self.replace_url_tags(prompt)
+            context = self.replace_url_tags(context)
 
+            print(f"[green][Process] URL Tags Replaced[/green]")
+            print(f"[green][Process] Prompt: {prompt}[/green]")
+            print(f"[green][Process] Context: {context}[/green]")
             # ---- Wikipedia ----
             wikipedia_resources = self._build_wikipedia_resources(context, prompt)
 
@@ -748,18 +747,21 @@ class LLMSimpleClient:
             "timeout": 100
         }
 
-    def build_url(self) -> str:
+    def build_url(self, endpoint) -> str:
         # merge base url and endpoint
-        return urljoin(self.base_url, self.endpoint)
+        if not self.base_url.endswith('/'):
+            self.base_url += '/'
+        return self.base_url + endpoint
     
     def ask_ai(self, prompt):
         if not self.api_key:
             raise RuntimeError(f"API_KEY not found in {self.filepath}. ")
         try:
+            print(f"[green][Process] Post request to {self.build_url('/chat/completions')}[/green]")
             completion = requests.post(
-                self.build_url(), headers=self.build_headers(), json=self.build_payload(prompt))
+                self.build_url("chat/completions"), headers=self.build_headers(), json=self.build_payload(prompt))
             data = completion.json()
-            print(f"[yellow]Response: {data}[/yellow]")
+            print(f"[green][Process] Response: {data}[/green]")
             # response['choices'][0]['message']['citations']
             response =  data["choices"][0]["message"]["content"]
             
@@ -780,9 +782,15 @@ class LLMSimpleClient:
 class HTMLClient:
     @classmethod
     def get_title(cls, url):
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
+        # [TODO] なんか中国語だとバグったのであとで調べる
         soup = BeautifulSoup(response.text, 'html.parser')
         return soup.title.string
+
+    @classmethod
+    def html_to_text(cls, html_text):
+        soup = BeautifulSoup(html_text, 'html.parser')
+        return soup.get_text(strip=True)
 
 
 @click.command()
