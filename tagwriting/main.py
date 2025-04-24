@@ -219,25 +219,19 @@ class TextManager:
     def prepend_wikipedia_sources(cls, prompt_text, wikipedia_sources):
         """
         wikipedia_sources: Set[Tuple[str, str or None]]
-        
-        prompt_textの先頭に、
-         ---
-         # Sources:
-         ## OpenAI
-          ...
-         ---
-        の形で挿入する。
-        
+          -> return: str
         Wikipediaのタグもここで消去する。
         """
         if not wikipedia_sources:
             return prompt_text
-        header = ""
+
+        wikipedia_resources = ""
         for title, extract in wikipedia_sources:
             if extract:
-                header += f"## {title}\n\n{extract}\n\n"
-        # prompt_textのformatを使う
-        return prompt_text.format(wikipedia_resources=header)
+                wikipedia_resources += f"## {title}\n\n{extract}\n\n"
+
+        # chatプロンプトが存在しない場合:
+        return wikipedia_resources
 
     def fetch_wikipedia_tags(self, text):
         """
@@ -333,6 +327,12 @@ class TextManager:
     def _build_attrs_rules(self, attrs) -> str:
         return TextManager.build_attrs_rules(attrs, self.templates)
 
+    def _build_wikipedia_resources(self, context, prompt) -> str:
+        wikipedia_tags = self.fetch_wikipedia_tags(context)
+        wikipedia_tags = wikipedia_tags | self.fetch_wikipedia_tags(prompt)
+        # Wikipedia記事の取得結果を反映
+        return TextManager.prepend_wikipedia_sources(prompt, wikipedia_tags)
+
     def extract_prompt_tag(self):
         # backup_text:
         #   -> <prompt> or <chat>タグを置換する前のself.text
@@ -403,13 +403,11 @@ class TextManager:
             # prompt_text = self.replace_url_tags(prompt_text)
 
             # ---- Wikipedia ----
-            wikipedia_tags = self.fetch_wikipedia_tags(context)
-            wikipedia_tags = wikipedia_tags | self.fetch_wikipedia_tags(prompt)
-            # Wikipedia記事の取得結果を反映
-            context = TextManager.prepend_wikipedia_sources(context, wikipedia_tags)
+            wikipedia_resources = self._build_wikipedia_resources(context, prompt)
 
+            # ---- LLM ----
             response = ask_ai(self.templates["prompt"].format(
-                prompt=prompt, context=context, attrs_rules=attrs_rules))
+                prompt=prompt, context=context, attrs_rules=attrs_rules, wikipedia_resources=wikipedia_resources))
 
             # responseがNoneのときは、中断
             if response is None:

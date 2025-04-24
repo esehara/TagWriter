@@ -99,7 +99,7 @@ def test_prepend_wikipedia_sources():
     result = TextManager.prepend_wikipedia_sources(prompt, sources)
     assert result.startswith("## OpenAI\n\nOpenAIは人工知能の研究所です。")
     assert "OpenAI" in result and "イーロン・マスク" in result
-    assert result.endswith("これはテストです。")
+    assert result.endswith("\n\nイーロン・マスクは実業家です。\n\n")
 
     # 2. sourcesが空
     sources = []
