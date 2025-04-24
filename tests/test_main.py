@@ -90,16 +90,16 @@ def test_match_patterns_empty():
 
 def test_prepend_wikipedia_sources():
     # 1. 通常ケース
-    prompt = "これはテストです。"
+    prompt = """{wikipedia_resources}
+    これはテストです。"""
     sources = [
         ("OpenAI", "OpenAIは人工知能の研究所です。"),
         ("イーロン・マスク", "イーロン・マスクは実業家です。"),
     ]
     result = TextManager.prepend_wikipedia_sources(prompt, sources)
-    print(result)
-    assert result.startswith("---\n\n# Wikipedia resources:\n\n")
+    assert result.startswith("## OpenAI\n\nOpenAIは人工知能の研究所です。")
     assert "OpenAI" in result and "イーロン・マスク" in result
-    assert result.endswith(prompt)
+    assert result.endswith("これはテストです。")
 
     # 2. sourcesが空
     sources = []

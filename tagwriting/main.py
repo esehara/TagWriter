@@ -18,15 +18,21 @@ from watchdog.observers import Observer
 import importlib.metadata
 
 DEFAULT_PROMPT = """
-Your response will replace `@@processing@@` within the context. Please output text consistent with the context's integrity.
+Your response will replace `@@processing@@` within the context. 
+Please output text consistent with the context's integrity.
+
 Rule:
 - Do not include `@@processing@@` in your response.
 - Answer the UserPrompt directly, without explanations or commentary.
-Rule:
 {attrs_rules}
+
+Wikipedia Resources:
+{wikipedia_resources}
+
 Context:
 {context}
-UserPrompt:
+
+User prompt:
 {prompt}
 """
 
@@ -226,12 +232,12 @@ class TextManager:
         """
         if not wikipedia_sources:
             return prompt_text
-        lines = ["---", "# Wikipedia resources:"]
+        header = ""
         for title, extract in wikipedia_sources:
             if extract:
-                lines.append(f"## {title}\n{extract}")
-        header = '\n\n'.join(lines) + '\n\n---\n'
-        return header + prompt_text
+                header += f"## {title}\n\n{extract}\n\n"
+        # prompt_textのformatを使う
+        return prompt_text.format(wikipedia_resources=header)
 
     def fetch_wikipedia_tags(self, text):
         """

@@ -1,11 +1,23 @@
 prompt: |
-  あなたの回答はcontext内の`@@processing@@`と置換されます。前後の文章（テキスト）との整合性を合わせ、テキストを出力してください。
+  あなたの回答はcontext内の`@@processing@@`と置換されます。
+  前後の文章（テキスト）との整合性を合わせ、テキストを出力してください。
+  
   Rule:
    - `@@processing@@`は貴方の解答に含めないでください。
    - 解説や説明、返事を含めず、user promptに直接回答してください。
   {attrs_rules}
+  
+  ---
+
+  {wikipedia_resources}
+
+  ---
+
   context:
   {context}
+
+  ---
+
   user prompt:
   {prompt}
 
@@ -14,14 +26,16 @@ prompt: |
 #    powershell.exe "Import-Module BurntToast; New-BurntToastNotification -Text 'テキスト生成し終わりました', '{filepath}を確認してください'"
 
 attrs:
+  # recommend:
+  #   -> List[str] styles
+  # but you can use "str".
   bullet:
     - "箇条書きで出力する。"
     - "Markdownの段落が上下にあるときは、そのMarkdownの段落に合わせること。"
   remain: 
     - "user promptを`> `付きで残す。"
     - "ただし、contextは削除する。"
-  detail: 
-    - "出来るだけ詳しく説明する"
+  detail: "出来るだけ詳しく説明する"
   talking: 
     - "会話劇として出力する。"
     - "例: A「こんにちは」\n B「どうも、こんにちは！」"
