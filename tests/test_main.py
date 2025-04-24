@@ -175,3 +175,51 @@ def test_attar_and_llm_attrs_only():
 def test_attar_and_llm_empty():
     # '' -> ([], None)
     assert TextManager.attar_and_llm('') == ([], None)
+
+def test_convert_custom_tag_no_change():
+    tag = {"tag": "custom"}
+    prompt = "foo"
+    attrs = ["a1", "a2"]
+    llm_name = "gpt"
+    result = TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
+    assert result == "<prompt(gpt):a1:a2>foo</prompt>"
+
+def test_convert_custom_tag_prompt_change():
+    tag = {"tag": "custom", "change": "prompt"}
+    prompt = "bar"
+    attrs = []
+    llm_name = "gpt"
+    result = TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
+    assert result == "<prompt(gpt)>bar</prompt>"
+
+def test_convert_custom_tag_chat_change():
+    tag = {"tag": "custom", "change": "chat"}
+    prompt = "baz"
+    attrs = ["x"]
+    llm_name = "llama"
+    result = TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
+    assert result == "<chat(llama):x>baz</chat>"
+
+def test_convert_custom_tag_invalid_change():
+    tag = {"tag": "custom", "change": "invalid"}
+    prompt = "zzz"
+    attrs = []
+    llm_name = None
+    result = TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
+    assert result == "<prompt>zzz</prompt>"
+
+def test_convert_custom_tag_no_attrs():
+    tag = {"tag": "custom"}
+    prompt = "abc"
+    attrs = []
+    llm_name = "gpt"
+    result = TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
+    assert result == "<prompt(gpt)>abc</prompt>"
+
+def test_convert_custom_tag_no_llm():
+    tag = {"tag": "custom"}
+    prompt = "def"
+    attrs = ["a1"]
+    llm_name = None
+    result = TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
+    assert result == "<prompt:a1>def</prompt>"

@@ -111,6 +111,36 @@ class TextManager:
             return (match_tag.group(0), match_tag.group(2), attrs, llm_name) 
         return None
 
+    @classmethod
+    def convert_custom_tag(cls, tag, prompt, attrs, llm_name):
+        """
+        Convert custom tag to safe tag:
+        
+        tag: dict = {"tag": "tag_name", "format": "prompt formt", "change": "prompt"}
+        prompt: str = "prompt text"
+        attrs: list = ["attr1", "attr2"]
+        llm_name: str = "gpt"
+
+        return:
+          <prompt(gpt):attr1:attr2>prompt text</prompt>
+        """        
+        attrs_text = ":".join(attrs) if attrs else ""
+        attrs_text = f":{attrs_text}" if attrs_text != "" else ""
+        llm_name = f"({llm_name.lower()})" if llm_name is not None else ""
+        # tagをsafeにする
+        # tag['change']が設定されていない場合、または
+        # tag['change']が"prompt"または"chat"でない場合は、"prompt"にする
+        # 言い換えると、tag['change']は他のtagには変換できない
+        # 
+        # reason:
+        #   -> tagはpromptまたはchatにしないと循環参照が起きる可能性があるため
+        if "change" not in tag:
+            tag["change"] = "prompt" 
+        elif tag["change"] != "prompt" and tag["change"] != "chat":
+            print(f"[warning] Invalid tag change: {tag['change']}")
+            tag["change"] = "prompt" 
+        return f"<{tag['change']}{llm_name}{attrs_text}>{prompt}</{tag['change']}>"
+
     def _pre_prompt(self):
         """
         Simple replace for tags:
@@ -125,23 +155,7 @@ class TextManager:
             result = TextManager.extract_tag_contents(tag['tag'], self.text)
             if result is not None:
                 tags, prompt, attrs, llm_name = result
-                attrs_text = ":".join(attrs) if attrs else ""
-                attrs_text = f":{attrs_text}" if attrs_text != "" else ""
-                llm_name = f"({llm_name.lower()})" if llm_name is not None else ""
-            
-                # tagをsafeにする
-                # tag['change']が設定されていない場合、または
-                # tag['change']が"prompt"または"chat"でない場合は、"prompt"にする
-                # 言い換えると、tag['change']は他のtagには変換できない
-                # 
-                # reason:
-                #   -> tagはpromptまたはchatにしないと循環参照が起きる可能性があるため
-                if "change" not in tag:
-                    tag["change"] = "prompt" 
-                elif tag["change"] != "prompt" and tag["change"] != "chat":
-                    print(f"[warning] Invalid tag change: {tag['change']}")
-                    tag["change"] = "prompt" 
-                replace_tags = f"<{tag['change']}{llm_name}{attrs_text}>{tag['format']}</{tag['change']}>".format(prompt=prompt)
+                replace_tags = TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
                 self.text = self.text.replace(tags, replace_tags)
                 self._save_text()
                 return
