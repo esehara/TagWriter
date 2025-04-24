@@ -124,10 +124,11 @@ class TextManager:
         for tag in self.templates["tags"]:
             result = TextManager.extract_tag_contents(tag['tag'], self.text)
             if result is not None:
-                tags, prompt, attrs = result
+                tags, prompt, attrs, llm_name = result
                 attrs_text = ":".join(attrs) if attrs else ""
                 attrs_text = f":{attrs_text}" if attrs_text != "" else ""
-
+                llm_name = f"({llm_name.lower()})" if llm_name is not None else ""
+            
                 # tagをsafeにする
                 # tag['change']が設定されていない場合、または
                 # tag['change']が"prompt"または"chat"でない場合は、"prompt"にする
@@ -140,7 +141,7 @@ class TextManager:
                 elif tag["change"] != "prompt" and tag["change"] != "chat":
                     print(f"[warning] Invalid tag change: {tag['change']}")
                     tag["change"] = "prompt" 
-                replace_tags = f"<{tag['change']}{attrs_text}>{tag['format']}</{tag['change']}>".format(prompt=prompt)
+                replace_tags = f"<{tag['change']}{llm_name}{attrs_text}>{tag['format']}</{tag['change']}>".format(prompt=prompt)
                 self.text = self.text.replace(tags, replace_tags)
                 self._save_text()
                 return
@@ -790,7 +791,7 @@ class HTMLClient:
     @classmethod
     def html_to_text(cls, html_text):
         soup = BeautifulSoup(html_text, 'html.parser')
-        return soup.get_text(strip=True)
+        return soup.get_text()
 
 
 @click.command()
