@@ -283,11 +283,42 @@ class TextManager:
                 results.add((title, None))
         return results
 
-    def _build_attrs_rules(self, attrs):
+    def _build_attrs_rules(self, attrs) -> str:
+        """
+        Build rules for attributes.
+
+        example:
+          Yaml settings:
+          ```
+          attrs:
+            bullet: 
+              - "bullet style"
+              - "Markdown style"
+          ```   
+          attrs type: List[str] or str
+          
+          to Prompt:
+          ```
+          Rules:
+          - bullet style
+          - Markdown style
+          ({{attrs_rules}})
+          ```
+        """
         rules = ""
         for attr in attrs:
             if attr in self.templates["attrs"]:
-                rules += f" - {self.templates['attrs'][attr]}\n"
+                # list or str
+                # listのときは、ルールをリスト化し、
+                # strのときは、そのままルールとして追加する
+                if isinstance(self.templates["attrs"][attr], list):
+                    for rule in self.templates["attrs"][attr]:
+                        rules += f" - {rule}\n"
+                elif isinstance(self.templates["attrs"][attr], str):
+                    rules += f" - {self.templates['attrs'][attr]}\n"
+                else:
+                    print(f"[red][bold][Warning][/bold] Invalid attribute rule type: '{attr}'[/red]")
+                    print(f"[red][bold][Warning][/bold] Attribute rule type must be list or str[/red]")
             else:
                 print(f"[red][bold][Warning][/bold] Attribute rule not defined: '{attr}'[/red]")
         return rules

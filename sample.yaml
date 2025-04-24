@@ -14,14 +14,17 @@ prompt: |
 #    powershell.exe "Import-Module BurntToast; New-BurntToastNotification -Text 'テキスト生成し終わりました', '{filepath}を確認してください'"
 
 attrs:
-  bullet: |
-    箇条書きで出力する。
-    ただし、Markdownの段落が上下にあるときは、そのMarkdownの段落に合わせること。
-  remain: |
-    user promptを`> `付きで残す。
-    ただし、contextは削除する。
-  detail: "出来るだけ詳しく説明する"
-  talking: "会話劇として出力する"
+  bullet:
+    - "箇条書きで出力する。"
+    - "Markdownの段落が上下にあるときは、そのMarkdownの段落に合わせること。"
+  remain: 
+    - "user promptを`> `付きで残す。"
+    - "ただし、contextは削除する。"
+  detail: 
+    - "出来るだけ詳しく説明する"
+  talking: 
+    - "会話劇として出力する。"
+    - "例: A「こんにちは」\n B「どうも、こんにちは！」"
   academic: "学術的な記述で出力する"
 
 history:
