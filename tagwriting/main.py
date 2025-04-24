@@ -68,23 +68,47 @@ class TextManager:
 
 
     @classmethod
+    def attar_and_llm(cls, attrs_and_llm):
+        """
+        example:
+          - "(gpt):funny:detail" -> (gpt, ["funny", "detail"])
+          - "(gpt)" -> (gpt, [])
+          - "funny:detail" -> (None, ["funny", "detail"])
+        """
+        if attrs_and_llm is None:
+            return [], None
+        # llm name = "(gpt)" -> gpt
+        llm_name = re.search(r'\([\w]+\)', attrs_and_llm)
+        if llm_name:
+            attrs_and_llm = attrs_and_llm.replace(f'{llm_name.group(0)}', '')
+            llm_name = llm_name.group(0).replace('(', '').replace(')', '')
+        attrs = attrs_and_llm.split(':') if attrs_and_llm else []
+        attrs = list(filter(None, attrs))
+        return attrs, llm_name
+
+    @classmethod
     def extract_tag_contents(cls, tag_name, text):
         """
         get tag and inner text.
-          example: <prompt:funny>内容</prompt>
-            -> ("<prompt:funny>内容</prompt>", "内容", ["funny"])
+          example: <prompt(gpt):funny>内容</prompt>
+            -> ("<prompt:funny>内容</prompt>", "内容", ["funny"], "gpt")
+
         recursive process:
           example: <prompt>summarize: <prompt> Python language </prompt></prompt>
             -> <prompt>Python language</prompt>
             -> ("<prompt>Python language</prompt>", "Python language", [])
         """
-        pattern = fr'<{tag_name}(?::([\w:]+))?>((?:(?!<{tag_name}>).)*?)</{tag_name}>'
+
+        # match list: 
+        #   -> <prompt>foobar</prompt>
+        #   -> <prompt:funny>foobar</prompt>
+        #   -> <prompt(gpt):funny>foobar</prompt>
+        #   -> <prompt(gpt)>foobar</prompt>
+        pattern = f'<{tag_name}([^>]*?)>(.*?)</{tag_name}>'
         match_tag =  re.search(pattern, text, flags=re.DOTALL)
         if match_tag:
-            # match_tag.group(0) -> tag (<process>foobar</process>)
-            # match_tag.group(2) -> inner text (foobar)
-            attrs = match_tag.group(1).split(':') if match_tag.group(1) else []
-            return (match_tag.group(0), match_tag.group(2), attrs) 
+            attrs, llm_name = TextManager.attar_and_llm(match_tag.group(1))
+            return (match_tag.group(0), match_tag.group(2), attrs, llm_name) 
         return None
 
     def _pre_prompt(self):
@@ -377,7 +401,7 @@ class TextManager:
             if result is None:
                 return None
 
-            tag, prompt, attrs = result
+            tag, prompt, attrs, llm_name = result
 
             # Safety Undo Check
             # -> config.yamlのconfig.duplicate_promptを参照
@@ -426,7 +450,7 @@ class TextManager:
             wikipedia_resources = self._build_wikipedia_resources(context, prompt)
 
             # ---- LLM ----
-            llm_client = LLMSimpleClient()
+            llm_client = LLMSimpleClient(llm_name)
             response = llm_client.ask_ai(self.templates["prompt"].format(
                 prompt=prompt, context=context, attrs_rules=attrs_rules, wikipedia_resources=wikipedia_resources))
 
@@ -696,9 +720,9 @@ class FileChangeHandler(FileSystemEventHandler):
         self.on_change(event.src_path)
 
 class LLMSimpleClient:
-    def __init__(self, env_postfix = None) -> None:
-        if env_postfix:
-            env_filepath = Path.cwd() / f".env.{env_postfix}"
+    def __init__(self, llm_name = None) -> None:
+        if llm_name:
+            env_filepath = Path.cwd() / f".env.{llm_name}"
         else:
             env_filepath = Path.cwd() / ".env"
         load_dotenv(dotenv_path=env_filepath, override=True)

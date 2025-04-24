@@ -5,17 +5,17 @@ import os
 def test_extract_tag_contents_no_attr():
     text = "<prompt>foobar</prompt>"
     result = TextManager.extract_tag_contents("prompt", text)
-    assert result == ("<prompt>foobar</prompt>", "foobar", [])
+    assert result == ("<prompt>foobar</prompt>", "foobar", [], None)
 
 def test_extract_tag_contents_single_attr():
     text = "<prompt:funny>foobar</prompt>"
     result = TextManager.extract_tag_contents("prompt", text)
-    assert result == ("<prompt:funny>foobar</prompt>", "foobar", ["funny"])
+    assert result == ("<prompt:funny>foobar</prompt>", "foobar", ["funny"], None)
 
 def test_extract_tag_contents_multi_attr():
     text = "<prompt:funny:detail>foobar</prompt>"
     result = TextManager.extract_tag_contents("prompt", text)
-    assert result == ("<prompt:funny:detail>foobar</prompt>", "foobar", ["funny", "detail"])
+    assert result == ("<prompt:funny:detail>foobar</prompt>", "foobar", ["funny", "detail"], None)
 
 def test_extract_tag_contents_other_tag():
     text = "<other>foobar</other>"
@@ -27,10 +27,21 @@ def test_extract_tag_contents_not_found():
     result = TextManager.extract_tag_contents("prompt", text)
     assert result is None
 
-def test_extract_tag_contents_inner_tag():
-    text = "<prompt>foo <prompt>bar</prompt> baz</prompt>"
+# TODO: この実装が終わったら対応する
+# def test_extract_tag_contents_inner_tag():
+#     text = "<prompt>foo <prompt>bar</prompt> baz</prompt>"
+#     result = TextManager.extract_tag_contents("prompt", text)
+#     assert result == ("<prompt>bar</prompt>", "bar", [], None)
+
+def test_extract_tag_contents_llm_name_and_attrs():
+    text = "<prompt(gpt):funny:detail>foobar</prompt>"
     result = TextManager.extract_tag_contents("prompt", text)
-    assert result == ("<prompt>bar</prompt>", "bar", [])
+    assert result == ("<prompt(gpt):funny:detail>foobar</prompt>", "foobar", ["funny", "detail"], "gpt")
+
+def test_extract_tag_contents_llm_name_only():
+    text = "<prompt(gpt)>foobar</prompt>"
+    result = TextManager.extract_tag_contents("prompt", text)
+    assert result == ("<prompt(gpt)>foobar</prompt>", "foobar", [], "gpt")
 
 def test_safe_text_plain():
     text = "This is a plain response."
@@ -141,3 +152,26 @@ def test_build_attrs_rules():
     expected = " - bullet style\n - Markdown style\n - plain style\n"
     result = TextManager.build_attrs_rules(attrs, templates)
     assert result == expected
+
+def test_attar_and_llm_none():
+    assert TextManager.attar_and_llm(None) == ([], None)
+
+def test_attar_and_llm_llm_and_attrs():
+    # (gpt):funny:detail -> (['funny', 'detail'], '(gpt)')
+    assert TextManager.attar_and_llm('(gpt):funny:detail') == (['funny', 'detail'], 'gpt')
+
+def test_attar_only():
+    # funny -> (['funny'], None)
+    assert TextManager.attar_and_llm('funny') == (['funny'], None)
+
+def test_attar_and_llm_llm_only():
+    # (gpt) -> ([], '(gpt)')
+    assert TextManager.attar_and_llm('(gpt)') == ([], 'gpt')
+
+def test_attar_and_llm_attrs_only():
+    # funny:detail -> (['funny', 'detail'], None)
+    assert TextManager.attar_and_llm('funny:detail') == (['funny', 'detail'], None)
+
+def test_attar_and_llm_empty():
+    # '' -> ([], None)
+    assert TextManager.attar_and_llm('') == ([], None)

@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .env
+.env.sonar
 .venv
 .envrc
 .mypy_cache/
