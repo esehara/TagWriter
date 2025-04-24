@@ -7,6 +7,7 @@ import requests
 import datetime
 import subprocess
 from pathlib import Path
+from urllib.parse import urljoin
 import yaml
 import click
 from dotenv import load_dotenv
@@ -748,8 +749,9 @@ class LLMSimpleClient:
         }
 
     def build_url(self) -> str:
-        return self.base_url + "/chat/completions"
-
+        # merge base url and endpoint
+        return urljoin(self.base_url, self.endpoint)
+    
     def ask_ai(self, prompt):
         if not self.api_key:
             raise RuntimeError(f"API_KEY not found in {self.filepath}. ")
