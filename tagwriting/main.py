@@ -426,7 +426,8 @@ class TextManager:
             wikipedia_resources = self._build_wikipedia_resources(context, prompt)
 
             # ---- LLM ----
-            response = ask_ai(self.templates["prompt"].format(
+            llm_client = LLMSimpleClient()
+            response = llm_client.ask_ai(self.templates["prompt"].format(
                 prompt=prompt, context=context, attrs_rules=attrs_rules, wikipedia_resources=wikipedia_resources))
 
             # responseがNoneのときは、中断
@@ -694,34 +695,38 @@ class FileChangeHandler(FileSystemEventHandler):
             return
         self.on_change(event.src_path)
 
+class LLMSimpleClient:
+    def __init__(self, env_postfix = None) -> None:
+        if env_postfix:
+            env_filepath = Path.cwd() / f".env.{env_postfix}"
+        else:
+            env_filepath = Path.cwd() / ".env"
+        load_dotenv(dotenv_path=env_filepath, override=True)
+        self.api_key = os.getenv("API_KEY")
+        self.base_url = os.getenv("BASE_URL")
+        self.model = os.getenv("MODEL")
+        self.filepath = env_filepath
 
-def ask_ai(prompt):
-    """
-    指定したプロンプトを外部のAI APIに送り、応答を返す
-    """
-    model = os.getenv("MODEL")
-    api_key = os.getenv("API_KEY")
-    base_url = os.getenv("BASE_URL")
-    if not api_key:
-        raise RuntimeError("API_KEYが設定されていません。'.env'ファイルまたは環境変数を確認してください。")
-    client = OpenAI(api_key=api_key, base_url=base_url)
-    verbose_print(f"[yellow]Prompt text: {prompt}[/yellow]")
-    completion = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        timeout=100)
-    try:
-        return completion.choices[0].message.content
-    except Exception as e:
-        print(f"[red][bold][Error][/bold] AI error: {e}[/red]")
-        return None
+    def ask_ai(self, prompt):
+        if not self.api_key:
+            raise RuntimeError(f"API_KEY not found in {self.filepath}. ")
+        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        verbose_print(f"[yellow]Prompt text: {prompt}[/yellow]")
+        completion = client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            timeout=100)
+        try:
+            return completion.choices[0].message.content
+        except Exception as e:
+            print(f"[red][bold][Error][/bold] AI error: {e}[/red]")
+            return None
 
 
 @click.command()
 @click.argument('dirpath')
 @click.option('--templates', 'yaml_path', default=None, help='Template yaml file path')
 def main(dirpath, yaml_path):
-    load_dotenv(dotenv_path=Path.cwd() / ".env", override=True)
     if yaml_path is not None:
         yaml_path = os.path.abspath(yaml_path)
     client = ConsoleClient()
