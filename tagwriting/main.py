@@ -808,10 +808,14 @@ class HTMLClient:
         return soup.get_text()
 
 
+
 @click.command()
-@click.argument('dirpath')
+@click.option('--watch', 'dirpath', default=".", help='Directory path to watch')
 @click.option('--templates', 'yaml_path', default=None, help='Template yaml file path')#
 def main(dirpath, yaml_path):
+    # default
+    # -> dirpath = "."
+    # -> yaml_path = None
     if yaml_path is not None:
         yaml_path = os.path.abspath(yaml_path)
     client = ConsoleClient()
