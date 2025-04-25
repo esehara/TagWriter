@@ -1,5 +1,4 @@
 import fnmatch
-from operator import truediv
 import os
 import re
 import time
@@ -45,10 +44,6 @@ Timestamp: {timestamp}
 """
 
 VERBOSE = True
-
-def verbose_print(msg):
-    if VERBOSE:
-        print(msg)
 
 class TextManager:
     def __init__(self, filepath, templates, history):
@@ -603,6 +598,10 @@ class ConsoleClient:
         #     -> default: False
         if "hot_reload_yaml" not in templates["config"]:
             templates["config"]["hot_reload_yaml"] = False
+        #   verbose_print: verbose print
+        #     -> default: False
+        if "verbose_print" not in templates["config"]:
+            templates["config"]["verbose_print"] = False
 
         # selfpath:
         #   -> for hot reload yaml file.

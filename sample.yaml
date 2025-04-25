@@ -96,3 +96,6 @@ config:
   # hot reload yaml
   # -> 自身の設定ファイルの変更を検知し、変更があった場合はhot reloadする
   hot_reload_yaml: true
+  # verbose print
+  # -> 詳細な出力をする
+  verbose_print: true
