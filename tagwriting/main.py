@@ -43,7 +43,13 @@ Timestamp: {timestamp}
 
 """
 
-VERBOSE = True
+
+varbose_print = False
+def verbose_print(msg):
+    global varbose_print
+    if varbose_print:
+        rich.print(msg)
+
 
 class TextManager:
     def __init__(self, filepath, templates, history):
@@ -232,11 +238,11 @@ class TextManager:
             else:
                 print(f"[green][Process] Fetching URL: {url}")
                 response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
-                print(f"[green][Result] URL Response: {response}[/green]")
+                verbose_print(f"[green][Result] URL Response: {response}[/green]")
                 response.encoding = response.apparent_encoding
                 if response.status_code == 200:
                     # HTML -> BeautifulSoup -> Text
-                    print(f"[green][Process] Converting HTML to Text[/green]")
+                    verbose_print(f"[green][Process] Converting HTML to Text[/green]")
                     html_text = HTMLClient.html_to_text(response.text)
                     self.url_catch[url] = html_text
                     return html_text
@@ -451,12 +457,13 @@ class TextManager:
             attrs_rules = self._build_attrs_rules(attrs)
  
             # ---- URL ----
+            
+            print(f"[green][Process] fetch URL data ... [/green]")
+
             prompt = self.replace_url_tags(prompt)
             context = self.replace_url_tags(context)
 
             print(f"[green][Process] URL Tags Replaced[/green]")
-            print(f"[green][Process] Prompt: {prompt}[/green]")
-            print(f"[green][Process] Context: {context}[/green]")
             # ---- Wikipedia ----
             wikipedia_resources = self._build_wikipedia_resources(context, prompt)
 
@@ -655,6 +662,13 @@ class ConsoleClient:
             self.console.print(f"[red]Failed to load templates: [/red]")
             self.console.print(f"[red] -> Invalid yaml file: {yaml_path}[/red]")
             return
+
+        # 2.1 verbose print setting
+        #
+        # [FIXME] 
+        #   "global variable change" is dirty method. 
+        global varbose_print
+        varbose_print = self.templates["config"]["verbose_print"]
 
         # 3. Start main loop
         self.inloop()
@@ -871,7 +885,7 @@ class LLMSimpleClient:
             completion = requests.post(
                 self.build_url("chat/completions"), headers=self.build_headers(), json=self.build_payload(prompt))
             data = completion.json()
-            print(f"[green][Process] Response: {data}[/green]")
+            verbose_print(f"[green][Process] Response: {data}[/green]")
             # response['choices'][0]['message']['citations']
             response =  data["choices"][0]["message"]["content"]
             
