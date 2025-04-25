@@ -17,8 +17,10 @@
  - **0.3.1.4** configに`verbose_print`を追加する
  - **0.3.1.5** pypiライブラリに`tagwriting`を登録する
  - **0.3.1.6** BeautifulSoupのText戦略をHTMLのmainタグだけをターゲットにして行う。
- - **0.3.1.7 [WIP]** URL展開時に空白を消す`url_strp`を追加する
- - **0.3.1.8 [WIP]** history fileが指定されていないときはhistoryを書き込まない 
+ - **0.3.1.7** 明らかにwatch pathの下のフォルダを監視しているのはおかしいので、それを修正する
+ - **0.3.1.8 [WIP]** URL展開時に空白を消す`url_strp`を追加する
+ - **0.3.1.9 [WIP]** history fileが指定されていないときはhistoryを書き込まない 
+ - **0.3.1.10 [WIP]** verbose_printが動いていない
 
 ### 0.3.0
 - **0.3.0.2**URL Passの接続をちゃんとしたロジックで行う

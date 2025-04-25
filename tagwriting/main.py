@@ -44,11 +44,11 @@ Timestamp: {timestamp}
 """
 
 
-varbose_print = False
+verbose = False
 def verbose_print(msg):
-    global varbose_print
-    if varbose_print:
-        rich.print(msg)
+    global verbose
+    if verbose:
+        print(msg)
 
 
 class TextManager:
@@ -663,12 +663,15 @@ class ConsoleClient:
             self.console.print(f"[red] -> Invalid yaml file: {yaml_path}[/red]")
             return
 
+        verbose_print(f"[green][Process] Target path Infomation[/green]")
+        verbose_print(f"[white][Info] watch_path: {self.watch_path}[/white]")
+        verbose_print(f"[white][Info] dir_path: {self.dirpath}[/white]")
         # 2.1 verbose print setting
         #
         # [FIXME] 
         #   "global variable change" is dirty method. 
-        global varbose_print
-        varbose_print = self.templates["config"]["verbose_print"]
+        global verbose
+        verbose = self.templates["config"]["verbose_print"]
 
         # 3. Start main loop
         self.inloop()
@@ -740,12 +743,7 @@ class ConsoleClient:
 
     def _start_client_message(self):
         # show starting message:
-
-        if self.watch_path_is_dir:
-            self.console.print(f"[green]Watching >>> {self.dirpath}[/green]", justify="center")
-        else:
-            self.console.print(f"[green]Watching >>> {self.watch_path}[/green]", justify="center")
-        
+        self.console.print(f"[green]Watching >>> {self.watch_path}[/green]", justify="center")
         self.console.print(f"[blue] exit: Ctrl+C[/blue]", justify="center")
         self.console.print(f"[green]Start clients... [/green]", justify="center")
 
@@ -757,9 +755,11 @@ class ConsoleClient:
           -> Start observer
         """
         self._start_client_message()
-        event_handler = FileChangeHandler(self.dirpath, self.on_change, self.templates)
+        use_path = self.watch_path if self.watch_path_is_dir else self.dirpath
+
+        event_handler = FileChangeHandler(use_path, self.on_change, self.templates)
         observer = Observer()
-        observer.schedule(event_handler, path=os.path.dirname(self.dirpath), recursive=True)
+        observer.schedule(event_handler, path=use_path, recursive=True)
         observer.start()
 
         try:
@@ -935,6 +935,7 @@ def main(watch_path, yaml_path):
     #  and raise "Error: Got unexpected extra arguments". fix this.
     if yaml_path is not None:
         yaml_path = os.path.abspath(yaml_path)
+    watch_path = os.path.abspath(watch_path)
     client = ConsoleClient()
     client.start(watch_path, yaml_path)
 

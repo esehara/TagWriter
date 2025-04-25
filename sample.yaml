@@ -53,6 +53,7 @@ target:
   - "*.markdown"
 
 ignore:
+  - "CHANGELOG.md"
   - "README.md"
   - "getstart.md"
   - "README_ja.md"
