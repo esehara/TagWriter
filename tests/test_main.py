@@ -1,5 +1,5 @@
 import pytest
-from tagwriting.main import TextManager, FileChangeHandler
+from tagwriting.main import TextManager, FileChangeHandler, ConsoleClient
 import os
 
 def test_extract_tag_contents_no_attr():

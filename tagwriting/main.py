@@ -742,6 +742,17 @@ class ConsoleClient:
 
 
 class FileChangeHandler(FileSystemEventHandler):
+
+    def __init__(self, dirpath, on_change, templates, debounce_interval=0.5):
+        super().__init__()
+        self.dirpath = os.path.abspath(dirpath)
+        self.on_change = on_change
+        self._last_called = 0
+        self._debounce_interval = debounce_interval
+        self._ignore = templates["ignore"]
+        self._target = templates["target"]
+        self._selfpath = templates["selfpath"]
+
     @classmethod
     def match_patterns(cls, path, patterns):
         """
@@ -763,16 +774,6 @@ class FileChangeHandler(FileSystemEventHandler):
                 if path == file_pattern:
                     return True
         return False
-
-    def __init__(self, dirpath, on_change, templates, debounce_interval=0.5):
-        super().__init__()
-        self.dirpath = os.path.abspath(dirpath)
-        self.on_change = on_change
-        self._last_called = 0
-        self._debounce_interval = debounce_interval
-        self._ignore = templates["ignore"]
-        self._target = templates["target"]
-        self._selfpath = templates["selfpath"]
 
     def _is_debounce(self):
         now = time.time()
@@ -895,6 +896,10 @@ def main(watch_path, yaml_path):
     # default
     # -> watch_path = "."
     # -> yaml_path = None
+    #  
+    # [TODO]: asterisk file path ("*.md", "*.txt", etc. ) is "multiple files"
+    #  example: "*.md" -> "hoo.md" "bar.md"
+    #  and raise "Error: Got unexpected extra arguments". fix this.
     if yaml_path is not None:
         yaml_path = os.path.abspath(yaml_path)
     client = ConsoleClient()
