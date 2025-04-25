@@ -14,7 +14,7 @@
  - **0.3.1.2**  Watch pathの引数がfile path(not directory path)だった場合に単独のファイルを監視するようにする
    - もしWatch pathがYaml filesで定義されている場合、引数で上書きされている旨を伝える
  - **0.3.1.3** yaml fileのHot reloadを行うかどうかをYaml configに書けるようにする
- - **0.3.1.4[WIP]** configに`verbose_print`を追加する
+ - **0.3.1.4** configに`verbose_print`を追加する
 ### 0.3.0
 - **0.3.0.2**URL Passの接続をちゃんとしたロジックで行う
 - **0.3.0.1**Perplexityには独特のフィールド処理があるので、それの対処
