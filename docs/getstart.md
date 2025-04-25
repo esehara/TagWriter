@@ -120,8 +120,8 @@ Tagwritingの素晴らしさを教えます
   ここで、注意して欲しいのは、`tagwriting`がエディタと連携するためには、エディタ側が **ファイルの変更を監視し、そのファイルの変更を反映する** という動作を何らかの形で保証している必要があります。例えば、このような挙動を提供するエディタとしては、以下のものがあります。
 
   - [VSCode](https://code.visualstudio.com/) 
-  - [Pulser(旧Atom)](https://pulser.io/)
-  - [Lite XL](https://www.lite-xl.com/)
+  - [Pulser(旧Atom)](https://pulsar-edit.dev/)
+  - [Lite XL](https://lite-xl.com/)
 
 　あるいは、リアルタイムではなくても、ダイアログで確認するタイプのエディタも可能です。
 
@@ -329,7 +329,11 @@ attrs:
   opinion: "あなたの意見を出力してください"
 ```
 
-`tagwriting`にとっては、厳密な運用というのは存在しませんので、これで定義して構いません。ですが、これはまずプロンプトがこれらルールとかけ離れるために、若干文脈を捉えそこねる可能性があるという、プロンプトエンジニアリングの観点から注意してください。少し、詳細の挙動を述べると、**属性プロンプトルール**は次のように動作しています。
+`tagwriting`にとっては、厳密な運用というのは存在しませんので、これで定義して構いません。
+
+ですが、これだとプロンプトがルールと離れるために、若干文脈を捉えそこねる可能性があるということを指摘します。これは、プロンプトエンジニアリングの観点から注意する必要のある事項です。
+
+これに関しては、実際の挙動を見ると解りやすいでしょう。**属性プロンプトルール**は次のように動作しています。
 
 ```markdown
 Your response will replace `@@processing@@` within the context. 
@@ -338,7 +342,7 @@ Please output text consistent with the context's integrity.
 Rule:
 - Do not include `@@processing@@` in your response.
 - Answer the UserPrompt directly, without explanations or commentary.
-- あなたの意見を出力してください
+- あなたの意見を出力してください　 **<-ここに挿入されている**
 
 Context:
 # Tagwritingの素晴らしさを教えます
