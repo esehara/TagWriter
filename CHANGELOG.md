@@ -11,7 +11,8 @@
  - **0.3.1.1** defaultの挙動を修正する
    - 簡単に使えるように、引数をオプションにする
      - defaultはcurrent files(`.`)ディレクトリを監視するようにする
- - **[WIP] 0.3.1.2**  Watch pathの引数がfile path(not directory path)だった場合に単独のファイルを監視するようにする
+ - **0.3.1.2**  Watch pathの引数がfile path(not directory path)だった場合に単独のファイルを監視するようにする
+   - もしWatch pathがYaml filesで定義されている場合、引数で上書きされている旨を伝える
  - **[WIP] 0.3.1.3**  yaml fileのHot reloadを行うかどうかをYaml configに書けるようにする
 
 ### 0.3.0

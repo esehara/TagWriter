@@ -574,10 +574,10 @@ class ConsoleClient:
             templates["history"] = {
                 "file": "{filename}.history.md", 
                 "template": DEFAULT_HISTORY_TEMPLATE}
-        self.is_default_template_target = False
+        templates["default_template_target"] = False
         if "target" not in templates:
             templates["target"] = ["*.txt", "*.md", "*.markdown"]
-            self.is_default_template_target = True
+            templates["default_template_target"] = True
         if "hook" not in templates:
             templates["hook"] = {}
 
@@ -588,10 +588,20 @@ class ConsoleClient:
         # default config
         if "config" not in templates:
             templates["config"] = {}
+
+        # config notes:
+        #   duplicate_prompt: duplicate prompt check
+        #     -> default: False
         if "duplicate_prompt" not in templates["config"]:
             templates["config"]["duplicate_prompt"] = False
+        #   simple_merge: if `@@processing@@` is in files, replace previous response
+        #     -> default: True
         if "simple_merge" not in templates["config"]:
-            templates["config"]["simple_merge"] = False
+            templates["config"]["simple_merge"] = True
+        #   hot_reload_yaml: if selfpath is not None, hot reload yaml file.
+        #     -> default: False
+        if "hot_reload_yaml" not in templates["config"]:
+            templates["config"]["hot_reload_yaml"] = False
 
         templates["selfpath"] = None
         return templates
@@ -610,6 +620,8 @@ class ConsoleClient:
               -> Check watch path (directory or file)
             1. Welcome message: "Hello, Tagwriting CLI!"
             2. Load templates from yaml file
+              -> Failed to load templates 
+                -> Abort!             
             3. Start main loop
         """
  
@@ -618,7 +630,7 @@ class ConsoleClient:
         if not os.path.exists(watch_path):
             self.console.print(f"[red]Directory or file does not exist: {watch_path}[/red]")
             return
-        self.is_dir = os.path.isdir(watch_path)
+        self.watch_path_is_dir = os.path.isdir(watch_path)
         self.watch_path = watch_path
         self.dirpath = os.path.dirname(watch_path)
 
@@ -636,6 +648,11 @@ class ConsoleClient:
             self.console.print(f"[red]Failed to load templates: [/red]")
             self.console.print(f"[red] -> Yaml file does not exist: {yaml_path}[/red]")
             return
+        # Invalid yaml file
+        except yaml.YAMLError:
+            self.console.print(f"[red]Failed to load templates: [/red]")
+            self.console.print(f"[red] -> Invalid yaml file: {yaml_path}[/red]")
+            return
 
         # 3. Start main loop
         self.inloop()
@@ -643,12 +660,26 @@ class ConsoleClient:
     def load_templates(self, yaml_path):
         """
         Load templates from yaml file.
+
+        Process:
+          if self.watch_path_is_dir is False, override target param.
+          but self.templates["default_template_target"] is False, warning message.
+
+        Args:
+            yaml_path (str): Path to yaml file
+
+        Note:
+            Error handling => parent method.
         """
         templates = None
         if yaml_path:
             with open(yaml_path, 'r', encoding='utf-8') as f:
                 templates = yaml.safe_load(f)
         self.templates = ConsoleClient.build_templates(templates)
+        if self.watch_path_is_dir is False:
+            self.templates["target"] = [self.watch_path]
+            if not self.templates["default_template_target"]:
+                self.console.print(f"[yellow]Warning - Override target param: {self.watch_path}[/yellow]", justify="center")
         self.templates["selfpath"] = yaml_path
 
     def on_change(self, filepath):
@@ -678,14 +709,29 @@ class ConsoleClient:
                     self.run_shell_command(self.templates["hook"]["text_generate_end"],
                         {"filepath": filepath})
 
-    def inloop(self):
+    def _start_client_message(self):
+        # show starting message:
+
+        if self.watch_path_is_dir:
+            self.console.print(f"[green]Watching >>> {self.dirpath}[/green]", justify="center")
+        else:
+            self.console.print(f"[green]Watching >>> {self.watch_path}[/green]", justify="center")
+        
+        self.console.print(f"[blue] exit: Ctrl+C[/blue]", justify="center")
         self.console.print(f"[green]Start clients... [/green]", justify="center")
+
+    def inloop(self):
+        """
+        1. show starting message
+        2. start main loop
+          -> Start watch path
+          -> Start observer
+        """
+        self._start_client_message()
         event_handler = FileChangeHandler(self.dirpath, self.on_change, self.templates)
         observer = Observer()
         observer.schedule(event_handler, path=os.path.dirname(self.dirpath), recursive=True)
         observer.start()
-        self.console.print(f"[green]Watching >>> {self.dirpath}[/green]", justify="center")
-        self.console.print(f"[blue] exit: Ctrl+C[/blue]", justify="center")
 
         try:
             while True:
