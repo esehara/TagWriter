@@ -15,6 +15,10 @@
    - もしWatch pathがYaml filesで定義されている場合、引数で上書きされている旨を伝える
  - **0.3.1.3** yaml fileのHot reloadを行うかどうかをYaml configに書けるようにする
  - **0.3.1.4** configに`verbose_print`を追加する
+ - **0.3.1.5** pypiライブラリに`tagwriting`を登録する
+ - **0.3.1.6 [WIP]** URL展開時に空白を消す`url_strp`を追加する
+ - **0.3.1.7 [WIP]** history fileが指定されていないときはhistoryを書き込まない 
+
 ### 0.3.0
 - **0.3.0.2**URL Passの接続をちゃんとしたロジックで行う
 - **0.3.0.1**Perplexityには独特のフィールド処理があるので、それの対処
