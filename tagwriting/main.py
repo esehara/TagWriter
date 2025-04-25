@@ -16,7 +16,7 @@ from watchdog.observers import Observer
 from bs4 import BeautifulSoup
 import importlib.metadata
 
-DEFAULT_PROMPT = """
+DEFAULT_SYSTEM_PROMPT = """
 Your response will replace `@@processing@@` within the context. 
 Please output text consistent with the context's integrity.
 
@@ -24,7 +24,8 @@ Rule:
 - Do not include `@@processing@@` in your response.
 - Answer the UserPrompt directly, without explanations or commentary.
 {attrs_rules}
-
+"""
+DEFAULT_USER_PROMPT = """
 Wikipedia Resources:
 {wikipedia_resources}
 
@@ -469,8 +470,10 @@ class TextManager:
 
             # ---- LLM ----
             llm_client = LLMSimpleClient(llm_name)
-            response = llm_client.ask_ai(self.templates["prompt"].format(
-                prompt=prompt, context=context, attrs_rules=attrs_rules, wikipedia_resources=wikipedia_resources))
+            response = llm_client.ask_ai(
+                self.templates["system_prompt"].format(attrs_rules=attrs_rules),
+                self.templates["user_prompt"].format(context=context, prompt=prompt, wikipedia_resources=wikipedia_resources)
+            )
 
             # responseがNoneのときは、中断
             if response is None:
@@ -555,38 +558,40 @@ class ConsoleClient:
     @classmethod
     def build_templates(cls, templates):
         """ 
-        Default templates param
+        Setting default templates param
 
-        prompt: sending to LLM template.
-        tags: list of template tags. replace <process> tag.
-        ignore: list of files to ignore.
         """
         if templates is None:
             templates = {}
 
         # if None, set default
-        if "prompt" not in templates:
-            templates["prompt"] = DEFAULT_PROMPT           
+        # --> Template Settings
+        if "system_prompt" not in templates:
+            templates["system_prompt"] = DEFAULT_SYSTEM_PROMPT
+        if "user_prompt" not in templates:
+            templates["user_prompt"] = DEFAULT_USER_PROMPT
+        # --> Custom Tag Settings
         if "tags" not in templates:
             templates["tags"] = []
+        # --> Watch files
         if "ignore" not in templates:
             templates["ignore"] = []
-        if "attrs" not in templates:
-            templates["attrs"] = {}
-        if "history" not in templates:
-            templates["history"] = {
-                "file": "{filename}.history.md", 
-                "template": DEFAULT_HISTORY_TEMPLATE}
         templates["default_template_target"] = False
         if "target" not in templates:
             templates["target"] = ["*.txt", "*.md", "*.markdown"]
             templates["default_template_target"] = True
+        templates["ignore"] = [os.path.abspath(p) for p in templates["ignore"]]
+        templates["target"] = [os.path.abspath(p) for p in templates["target"]]     
+        # --> Attributes
+        if "attrs" not in templates:
+            templates["attrs"] = {}
+        # --> History
+        if "history" not in templates:
+            templates["history"] = {
+                "file": "{filename}.history.md", 
+                "template": DEFAULT_HISTORY_TEMPLATE}
         if "hook" not in templates:
             templates["hook"] = {}
-
-        # change absolute path for ignore file
-        templates["ignore"] = [os.path.abspath(p) for p in templates["ignore"]]
-        templates["target"] = [os.path.abspath(p) for p in templates["target"]]
 
         # default config
         if "config" not in templates:
@@ -864,10 +869,13 @@ class LLMSimpleClient:
             "Content-Type": "application/json"
         }
 
-    def build_payload(self, prompt) -> dict:
+    def build_payload(self, system_prompt, user_prompt) -> dict:
         return {
             "model": self.model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [
+                {"role": "system", "content": system_prompt}, 
+                {"role": "user", "content": user_prompt}
+            ],
             "timeout": 100
         }
 
@@ -877,13 +885,15 @@ class LLMSimpleClient:
             self.base_url += '/'
         return self.base_url + endpoint
     
-    def ask_ai(self, prompt):
+    def ask_ai(self, system_prompt, user_prompt):
         if not self.api_key:
             raise RuntimeError(f"API_KEY not found in {self.filepath}. ")
         try:
             print(f"[green][Process] Post request to {self.build_url('/chat/completions')}[/green]")
+            payload = self.build_payload(system_prompt, user_prompt)
+            verbose_print(f"[white][Info] Request: {payload}[/white]")
             completion = requests.post(
-                self.build_url("chat/completions"), headers=self.build_headers(), json=self.build_payload(prompt))
+                self.build_url("chat/completions"), headers=self.build_headers(), json=payload)
             data = completion.json()
             verbose_print(f"[green][Process] Response: {data}[/green]")
             # response['choices'][0]['message']['citations']

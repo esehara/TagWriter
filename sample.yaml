@@ -1,4 +1,4 @@
-prompt: |
+system_prompt: |
   あなたの回答はcontext内の`@@processing@@`と置換されます。
   前後の文章（テキスト）との整合性を合わせ、テキストを出力してください。
   
@@ -6,15 +6,19 @@ prompt: |
    - `@@processing@@`は貴方の解答に含めないでください。
    - 解説や説明、返事を含めず、user promptに直接回答してください。
   {attrs_rules}
-  
-  Wikipedia Resources:
+
+user_prompt: |
+  # Wikipedia Resources:
+
   {wikipedia_resources}
-  
   ---
-  Context:
+  
+  # Context:
   {context}
+  
   ---  
-  user prompt:
+  
+  # User prompt:
   {prompt}
 
 # hook:

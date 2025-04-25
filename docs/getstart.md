@@ -549,12 +549,12 @@ history:
 
 このように、`history`フィールドを定義することで、`tagwriting`の記録ファイルと、その記録のためのテンプレートを定義することができます。
 
-### 4.2.3 `prompt`フィールド
+### 4.2.3 `system_prompt`と`user_prompt`フィールド
 
-あなたが私よりも遥かに優秀なプロンプトエンジニアならば、もっと素晴らしい定義をできると考えるかもしれません。そんな貴方の為に、`prompt`フィールドで、いわゆるメタテンプレートを定義することが出来ます。
+あなたが私よりも遥かに優秀なプロンプトエンジニアならば、自前で用意しているプロンプトよりも、もっと素晴らしい定義をできると考えるかもしれません。そんな貴方の為に、`system_prompt`や`user_prompt`フィールドで、LLMに接続する前のメタテンプレートを定義することが出来ます。
 
 ```yaml
-prompt: |
+system_prompt: |
   あなたの回答はcontext内の``と置換されます。
   前後の文章（テキスト）との整合性を合わせ、テキストを出力してください。
   
@@ -562,17 +562,23 @@ prompt: |
    - ``は貴方の解答に含めないでください。
    - 解説や説明、返事を含めず、user promptに直接回答してください。
   {attrs_rules}
-  
-  Wikipedia Resources:
+
+user_prompt: |
+  # Wikipedia Resources:
   {wikipedia_resources}
   
   ---
-  Context:
+  
+  # Context:
   {context}
+
   ---  
-  user prompt:
+
+  # User prompt:
   {prompt}
 ```
+
+このように、LLMに接続する前のメタテンプレートを定義することで、あなたの好みのプロンプトを定義することができます。それぞれは`system`と`user`のロールとして、LLMに渡されます。
 
 # 5. 少し高度な使い方
 
