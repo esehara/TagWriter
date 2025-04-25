@@ -105,6 +105,12 @@ MODEL=gpt-3.5-turbo
 tagwriting
 ```
 
+　また、任意のディレクトリを監視したい場合は、次のように指定できます。
+
+```bash
+tagwriting --watch <ディレクトリ名>
+```
+
 　これで、`tagwriting`は実行された現在のディレクトリを対象に、ファイル変更の監視を開始します。あとは、あなたの好みのエディタを使い、ファイルを編集していってください。
 　デフォルトでの監視ファイルは`*.md`, `*.txt`, `*.markdown`です。
 
@@ -129,23 +135,23 @@ tagwriting
 　このようなテキストを`tagwriting`で処理する場合、LLMに対しては次のようなプロンプトとして送られます。
 
 ```markdown
-Your response will replace `@@processing@@` within the context. 
+Your response will replace `` within the context. 
 Please output text consistent with the context's integrity.
 
 Rule:
-- Do not include `@@processing@@` in your response.
+- Do not include `` in your response.
 - Answer the UserPrompt directly, without explanations or commentary.
 
 Context:
 # Tagwritingの素晴らしさを教えます
 
-@@processing@@
+
 
 User prompt:
 Tagwritingの素晴らしさを教えます
 ```
 
-解りやすく言えば、あなたが利用しているLLMサービスのWeb UIから上のプロンプトを投げ、その帰ってきたレスポンスを`@@processing@@`の部分で置き換えるということを自動的に`tagwriting`が行っているという理解で良いでしょう。
+解りやすく言えば、あなたが利用しているLLMサービスのWeb UIから上のプロンプトを投げ、その帰ってきたレスポンスを``の部分で置き換えるということを自動的に`tagwriting`が行っているという理解で良いでしょう。
 
 #### 3.1.2 エディタの選出
 
@@ -391,18 +397,18 @@ attrs:
 これに関しては、実際の挙動を見ると解りやすいでしょう。**属性プロンプトルール**は次のように動作しています。
 
 ```markdown
-Your response will replace `@@processing@@` within the context. 
+Your response will replace `` within the context. 
 Please output text consistent with the context's integrity.
 
 Rule:
-- Do not include `@@processing@@` in your response.
+- Do not include `` in your response.
 - Answer the UserPrompt directly, without explanations or commentary.
 - あなたの意見を出力してください　 **<-ここに挿入されている**
 
 Context:
 # Tagwritingの素晴らしさを教えます
 
-@@processing@@
+
 
 User prompt:
 Tagwritingの素晴らしさを教えます
@@ -549,11 +555,11 @@ history:
 
 ```yaml
 prompt: |
-  あなたの回答はcontext内の`@@processing@@`と置換されます。
+  あなたの回答はcontext内の``と置換されます。
   前後の文章（テキスト）との整合性を合わせ、テキストを出力してください。
   
   Rule:
-   - `@@processing@@`は貴方の解答に含めないでください。
+   - ``は貴方の解答に含めないでください。
    - 解説や説明、返事を含めず、user promptに直接回答してください。
   {attrs_rules}
   
@@ -595,7 +601,7 @@ config:
   # -> これは、auto saveに対応しているエディタでUndoすると同じプロンプトが何度も発行されるため
   duplicate_prompt: false
   # simple merge
-  # -> 2回目以降のファイルに`@@processing@@`があった場合、前回の結果を挟み込む
+  # -> 2回目以降のファイルに``があった場合、前回の結果を挟み込む
   simple_merge: true
   # hot reload yaml
   # -> 自身の設定ファイルの変更を検知し、変更があった場合はhot reloadする

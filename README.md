@@ -59,6 +59,12 @@ pip install .
 tagwriting
 ```
 
+or 
+
+```sh
+tagwriting --watch <directory>
+```
+
 ---
 
 ## How to use .env

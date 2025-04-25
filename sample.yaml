@@ -54,6 +54,8 @@ target:
 
 ignore:
   - "README.md"
+  - "getstart.md"
+  - "README_ja.md"
   - "README_en.md"
   - ".git"
 
