@@ -914,7 +914,11 @@ class HTMLClient:
     @classmethod
     def html_to_text(cls, html_text):
         soup = BeautifulSoup(html_text, 'html.parser')
-        return soup.get_text()
+        target = soup.find('main')
+        if target:
+            return target.get_text()
+        else:
+            return soup.get_text()
 
 
 

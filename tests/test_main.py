@@ -1,5 +1,5 @@
 import pytest
-from tagwriting.main import TextManager, FileChangeHandler, ConsoleClient
+from tagwriting.main import TextManager, FileChangeHandler, ConsoleClient, HTMLClient
 import os
 
 def test_extract_tag_contents_no_attr():
@@ -223,3 +223,19 @@ def test_convert_custom_tag_no_llm():
     llm_name = None
     result = TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
     assert result == "<prompt:a1>def</prompt>"
+
+def test_html_to_text_main_exists():
+    html = """
+    <html><head><title>Test</title></head><body><main>メインのテキスト</main><footer>フッター</footer></body></html>
+    """
+    result = HTMLClient.html_to_text(html)
+    assert "メインのテキスト" in result
+    assert "フッター" not in result
+
+def test_html_to_text_main_not_exists():
+    html = """
+    <html><head><title>Test</title></head><body><div>全体テキスト</div><footer>フッター</footer></body></html>
+    """
+    result = HTMLClient.html_to_text(html)
+    assert "全体テキスト" in result
+    assert "フッター" in result
