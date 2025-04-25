@@ -853,9 +853,9 @@ class LLMSimpleClient:
         else:
             env_filepath = Path.cwd() / ".env"
         load_dotenv(dotenv_path=env_filepath, override=True)
-        self.api_key = os.getenv("API_KEY")
-        self.base_url = os.getenv("BASE_URL")
-        self.model = os.getenv("MODEL")
+        self.api_key = os.getenv("TAGWRITING_API_KEY") or os.getenv("API_KEY")
+        self.base_url = os.getenv("TAGWRITING_BASE_URL") or os.getenv("BASE_URL")
+        self.model = os.getenv("TAGWRITING_MODEL") or os.getenv("MODEL")
         self.filepath = env_filepath
 
     def build_headers(self) -> dict:
