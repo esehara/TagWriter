@@ -177,7 +177,7 @@ def test_attar_and_llm_empty():
     assert TextManager.attar_and_llm('') == ([], None)
 
 def test_convert_custom_tag_no_change():
-    tag = {"tag": "custom"}
+    tag = {"tag": "custom", "format": "{prompt}"}
     prompt = "foo"
     attrs = ["a1", "a2"]
     llm_name = "gpt"
@@ -185,7 +185,7 @@ def test_convert_custom_tag_no_change():
     assert result == "<prompt(gpt):a1:a2>foo</prompt>"
 
 def test_convert_custom_tag_prompt_change():
-    tag = {"tag": "custom", "change": "prompt"}
+    tag = {"tag": "custom", "change": "prompt", "format": "{prompt}"}
     prompt = "bar"
     attrs = []
     llm_name = "gpt"
@@ -193,7 +193,7 @@ def test_convert_custom_tag_prompt_change():
     assert result == "<prompt(gpt)>bar</prompt>"
 
 def test_convert_custom_tag_chat_change():
-    tag = {"tag": "custom", "change": "chat"}
+    tag = {"tag": "custom", "change": "chat", "format": "{prompt}"}
     prompt = "baz"
     attrs = ["x"]
     llm_name = "llama"
@@ -201,7 +201,7 @@ def test_convert_custom_tag_chat_change():
     assert result == "<chat(llama):x>baz</chat>"
 
 def test_convert_custom_tag_invalid_change():
-    tag = {"tag": "custom", "change": "invalid"}
+    tag = {"tag": "custom", "change": "invalid", "format": "{prompt}"}
     prompt = "zzz"
     attrs = []
     llm_name = None
@@ -209,7 +209,7 @@ def test_convert_custom_tag_invalid_change():
     assert result == "<prompt>zzz</prompt>"
 
 def test_convert_custom_tag_no_attrs():
-    tag = {"tag": "custom"}
+    tag = {"tag": "custom", "format": "{prompt}"}
     prompt = "abc"
     attrs = []
     llm_name = "gpt"
@@ -217,12 +217,29 @@ def test_convert_custom_tag_no_attrs():
     assert result == "<prompt(gpt)>abc</prompt>"
 
 def test_convert_custom_tag_no_llm():
-    tag = {"tag": "custom"}
+    tag = {"tag": "custom", "format": "{prompt}"}
     prompt = "def"
     attrs = ["a1"]
     llm_name = None
     result = TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
     assert result == "<prompt:a1>def</prompt>"
+
+def test_convert_custom_tag_with_format():
+    tag = {"tag": "custom", "format": "【AI返答】{prompt}!!"}
+    prompt = "こんにちは"
+    attrs = ["style1"]
+    llm_name = "gpt"
+    result = TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
+    # formatが適用されていることを確認
+    assert result == "<prompt(gpt):style1>【AI返答】こんにちは!!</prompt>"
+
+def test_convert_custom_tag_without_format_raises():
+    tag = {"tag": "custom"}
+    prompt = "エラー確認"
+    attrs = []
+    llm_name = None
+    with pytest.raises(KeyError):
+        TextManager.convert_custom_tag(tag, prompt, attrs, llm_name)
 
 def test_html_to_text_main_exists():
     html = """

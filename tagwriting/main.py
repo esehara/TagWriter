@@ -141,7 +141,7 @@ class TextManager:
         elif tag["change"] != "prompt" and tag["change"] != "chat":
             print(f"[warning] Invalid tag change: {tag['change']}")
             tag["change"] = "prompt" 
-        return f"<{tag['change']}{llm_name}{attrs_text}>{prompt}</{tag['change']}>"
+        return f"<{tag['change']}{llm_name}{attrs_text}>{tag['format'].format(prompt=prompt)}</{tag['change']}>"
 
     def _pre_prompt(self):
         """

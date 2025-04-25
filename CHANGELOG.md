@@ -12,8 +12,9 @@
    - この変更に従い、DEFAULT_PROMPTを、DEFAULT_SYSTEM_PROMPTとDEFAULT_USER_PROMPTに分ける
    - この変更に従い、sample.yamlを修正する
  - **0.3.2.1 [WIP]** URL展開時に空白を消す`url_strp`を追加する
- - **0.3.2.2 [WIP]** history fileが指定されていないときはhistoryを書き込まない 
- - **0.3.2.3 [WIP]** verbose_printが動いていない
+ - **0.3.2.2 [WIP]** URL展開時にソースURLを付随させる
+ - **0.3.2.3 [WIP]** history fileが指定されていないときはhistoryを書き込まない 
+ - **0.3.2.4 [WIP]** もう少しInner tagの処理を綺麗にする
 
 ### 0.3.1
  - BeautifulSoupを入れたので、URLタグの実装
@@ -31,7 +32,6 @@
 ### 0.3.0
 - **0.3.0.2**URL Passの接続をちゃんとしたロジックで行う
 - **0.3.0.1**Perplexityには独特のフィールド処理があるので、それの対処
-- **[WIP]** もう少しInner tagの処理を綺麗にする
 - MultiClientの追加
   - 複数のLLMを同時に使用する
   - タグの中に`()`構文を作成する
