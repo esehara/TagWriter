@@ -93,3 +93,6 @@ config:
   # simple merge
   # -> 2回目以降のファイルに`@@processing@@`があった場合、前回の結果を挟み込む
   simple_merge: true
+  # hot reload yaml
+  # -> 自身の設定ファイルの変更を検知し、変更があった場合はhot reloadする
+  hot_reload_yaml: true

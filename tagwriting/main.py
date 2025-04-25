@@ -370,15 +370,16 @@ class TextManager:
         return TextManager.prepend_wikipedia_sources(wikipedia_tags)
 
     def extract_prompt_tag(self):
-        # backup_text:
-        #   -> <prompt> or <chat>タグを置換する前のself.text
-        #   LLMとの接続が切断されたときに元のテキストに戻すために使用
         self._load_text()
 
         # loadが失敗した場合:
         #   self.text = None -> 処理を止める
         if self.text is None:
             return None
+
+        # backup_text:
+        #   -> <prompt> or <chat>タグを置換する前のself.text
+        #   LLMとの接続が切断されたときに元のテキストに戻すために使用
         backup_text = self.text
         try:
             # simple_merge
@@ -603,6 +604,8 @@ class ConsoleClient:
         if "hot_reload_yaml" not in templates["config"]:
             templates["config"]["hot_reload_yaml"] = False
 
+        # selfpath:
+        #   -> for hot reload yaml file.
         templates["selfpath"] = None
         return templates
 
@@ -683,8 +686,20 @@ class ConsoleClient:
         self.templates["selfpath"] = yaml_path
 
     def on_change(self, filepath):
+        """
+        Handle file change event.
+
+        Args:
+            filepath (str): Path to the changed file
+    
+        Process:
+          1. Check if the changed file is the template file
+          2. Templates["config"]["hot_reload_yaml"] is True?
+            -> If the changed file is the template file, reload the templates
+          3. If the changed file is not the template file, process the file
+        """
         self.console.rule(f"[bold yellow]File changed: {os.path.basename(filepath)}[/bold yellow]")
-        if filepath == self.templates["selfpath"]:
+        if self.templates["config"]["hot_reload_yaml"] and filepath == self.templates["selfpath"]:
             self.console.print(f"[bold yellow]Hot reload templates from {filepath}[/bold yellow]")
             # 編集中の壊れたファイルを読み込む場合があるので、Exceptionをキャッチしておいて、
             # クライアントが落ちないようにする
@@ -692,6 +707,7 @@ class ConsoleClient:
                 self.load_templates(self.templates["selfpath"])
             except Exception as e:
                 self.console.print(f"[yellow][Warning]Failed to reload templates: {e}[/yellow]")
+                self.console.print("[yellow]Continue to watch files...[/yellow]")
         else:            
             text_manager = TextManager(filepath, self.templates, self.history)
             result = text_manager.extract_prompt_tag()
