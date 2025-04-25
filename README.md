@@ -2,6 +2,8 @@
 
 TagWriting is a CLI tool that enables fast and flexible text generation by simply enclosing prompts in tags within your text files. It is designed to be simple, stateless, and editor-agnostic, making it easy to integrate into any workflow.
 
+- [日本語](https://github.com/esehara/TagWriting/blob/main/README_ja.md)
+
 ---
 
 ## Overview
