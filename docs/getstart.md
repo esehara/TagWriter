@@ -155,7 +155,7 @@ Tagwritingの素晴らしさを教えます
 flowchart LR
     File ---->|read|Tagwriting("Tagwriting CL")
     File ---->|read|Editor
-    Editor{"text editor"} ---->|write|File{"text file"}
+    Editor("text editor") ---->|write|File{"text file"}
     Tagwriting ---->|post|LLM("LLM") 
     Tagwriting ---->|write|File
     LLM -->|response|Tagwriting
