@@ -39,6 +39,8 @@
   `tagwriting`はWindows向けのRelease buildを念のため用意していますが、最新版ではないため、挙動が異なる可能性があります。
   それをご理解し利用してください。推奨は`python`に付属している`pip`を使用する方法です。
 
+  また、この`tagwriting`は、開発中ということもあり、ある程度まで技術になれている人を対象としているため、より基本的な説明は省略しています。ご了承ください。
+
 # 1. Install
 
 `tagwriting`は、以下のコマンドでインストールできます。
@@ -59,7 +61,17 @@ pip install tagwriting
 
   このツールは、外部のLLMサービスを呼び出すため、API KEYが必要です。
   
-  あなたが使いたいサービスの`API KEY`を取得し、`developer document`を参考にしながら、使いたいモデルとサービスのエンドポイントを確認し、`.env`ファイルに保存してください。典型的な設定は以下のようになります。
+  あなたが使いたいサービスの`API KEY`を取得します。
+
+**Note**: 典型的なプラットフォームのAPI習得ポイントは次のようになります。具体的な手順は、各プラットフォームの公式サイトを参考にしてください。
+
+- [ChatGPT](https://platform.openai.com/account/api-keys)
+- [Claude](https://console.anthropic.com/settings/keys)
+- [Grok](https://console.x.ai/)
+- [Gemini](https://aistudio.google.com/app/apikey)
+- [DeepSeek](https://platform.deepseek.com/api_keys)
+
+  その後、使いたいモデルとサービスのエンドポイントを確認したのちに、それらを`.env`ファイルに保存してください。
 
 ```bash
 TAGWRITING_API_KEY=your_api_key
@@ -67,7 +79,9 @@ TAGWRITING_BASE_URL=https://api.openai.com/v1
 TAGWRITING_MODEL=gpt-3.5-turbo
 ```
 
-この`.env`は`tagwriting`を動かす直下のディレクトリに配置するようにしてください。（例えば、`/path/to/your/project`で動かす場合は、`/path/to/your/project/.env`という形になります）
+**Note**: 現在は、`OpenAI`の習慣に基づき、`BASE_URL`に`/chat/completions`と追加したURLにアクセスします。もし上手く動かない場合は、これを参考にしてみてください。
+
+また、`.env`は`tagwriting`を動かす直下のディレクトリに配置するようにしてください。（例えば、`/path/to/your/project`で動かす場合は、`/path/to/your/project/.env`という形になります）
 
 これは簡潔に次のようにも書けます。
 
