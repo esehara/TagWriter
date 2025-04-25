@@ -574,8 +574,10 @@ class ConsoleClient:
             templates["history"] = {
                 "file": "{filename}.history.md", 
                 "template": DEFAULT_HISTORY_TEMPLATE}
+        self.is_default_template_target = False
         if "target" not in templates:
             templates["target"] = ["*.txt", "*.md", "*.markdown"]
+            self.is_default_template_target = True
         if "hook" not in templates:
             templates["hook"] = {}
 
@@ -594,23 +596,54 @@ class ConsoleClient:
         templates["selfpath"] = None
         return templates
 
-    def start(self, dirpath, yaml_path):
+    def start(self, watch_path, yaml_path):
+        """
+        Start the Tagwriting CLI path.
+
+        Args:
+            watch_path (str): Directory or file path to watch
+            yaml_path (str): Template yaml file path
+
+        Process:
+            0. Initialize
+              -> Absolute path conversion
+              -> Check watch path (directory or file)
+            1. Welcome message: "Hello, Tagwriting CLI!"
+            2. Load templates from yaml file
+            3. Start main loop
+        """
+ 
+        # 0. Initialize
+        watch_path = os.path.abspath(watch_path)
+        if not os.path.exists(watch_path):
+            self.console.print(f"[red]Directory or file does not exist: {watch_path}[/red]")
+            return
+        self.is_dir = os.path.isdir(watch_path)
+        self.watch_path = watch_path
+        self.dirpath = os.path.dirname(watch_path)
+
+        # 1. Welcome message
         self.console.rule("[bold blue]Tagwriting CLI[/bold blue]")
         self.console.print(f"[bold magenta]Hello, Tagwriting CLI![/bold magenta] :sparkles:", justify="center")
         version = importlib.metadata.version("tagwriting")
         self.console.print(f"[yellow]Version: {version}[/yellow]", justify="center")
-        self.load_templates(yaml_path)
 
-        # use absolute path
-        dirpath = os.path.abspath(dirpath)
-
-        if not os.path.exists(dirpath):
-            self.console.print(f"[red]ディフェクトリが存在しません: {dirpath}[/red]")
+        try:
+            # 2. Load templates from yaml file
+            self.load_templates(yaml_path)
+        # Not found yaml file
+        except FileNotFoundError:
+            self.console.print(f"[red]Failed to load templates: [/red]")
+            self.console.print(f"[red] -> Yaml file does not exist: {yaml_path}[/red]")
             return
-        self.dirpath = dirpath
+
+        # 3. Start main loop
         self.inloop()
 
     def load_templates(self, yaml_path):
+        """
+        Load templates from yaml file.
+        """
         templates = None
         if yaml_path:
             with open(yaml_path, 'r', encoding='utf-8') as f:
@@ -810,16 +843,16 @@ class HTMLClient:
 
 
 @click.command()
-@click.option('--watch', 'dirpath', default=".", help='Directory path to watch')
+@click.option('--watch', 'watch_path', default=".", help='Directory path or file path to watch')
 @click.option('--templates', 'yaml_path', default=None, help='Template yaml file path')#
-def main(dirpath, yaml_path):
+def main(watch_path, yaml_path):
     # default
-    # -> dirpath = "."
+    # -> watch_path = "."
     # -> yaml_path = None
     if yaml_path is not None:
         yaml_path = os.path.abspath(yaml_path)
     client = ConsoleClient()
-    client.start(dirpath, yaml_path)
+    client.start(watch_path, yaml_path)
 
 
 if __name__ == "__main__":
