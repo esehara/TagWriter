@@ -3,7 +3,7 @@
 ## 0.3.x
 
 ### 0.3.1
- - **[WIP]** BeautifulSoupを入れたので、URLタグの実装
+ - BeautifulSoupを入れたので、URLタグの実装
 
 ### 0.3.0
 - **0.3.0.2**URL Passの接続をちゃんとしたロジックで行う
