@@ -151,14 +151,14 @@ Tagwritingの素晴らしさを教えます
 
   このような説明を最初に行ったのは、`tagwriting`がエディタの挙動に依存する部分があるからです。`tagwriting`は以下のようなワークフローを想定しています。
 
-```text
-  Editor -- writing --> text file
-
-  text file -- modifed --> `tagwriting` ( -- call --> LLM -- response --> `tagwriting`)
-
-  `tagwriting` -- writing --> text file
-
-  text file -- reload --> Editor
+```mermaid
+flowchart LR
+    File ---->|read|Tagwriting("Tagwriting CL")
+    File ---->|read|Editor
+    Editor{"text editor"} ---->|write|File{"text file"}
+    Tagwriting ---->|post|LLM("LLM") 
+    Tagwriting ---->|write|File
+    LLM -->|response|Tagwriting
 ```
 
   ここで、注意して欲しいのは、`tagwriting`がエディタと連携するためには、エディタ側が **ファイルの変更を監視し、そのファイルの変更を反映する** という動作を何らかの形で保証している必要があります。例えば、このような挙動を提供するエディタとしては、以下のものがあります。
