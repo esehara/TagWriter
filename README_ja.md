@@ -4,6 +4,8 @@
 
 AIと人間のあいだを、テキストファイルでもっとシームレスに繋ぐツールです。
 
+- [Get Start Guide](https://github.com/esehara/TagWriting/blob/main/docs/getstart.md)
+
 ---
 
 ## ✨ 概要
@@ -29,35 +31,6 @@ AIと人間のあいだを、テキストファイルでもっとシームレス
 1. `.md`などのファイルを編集し、プロンプトをタグで囲む  
 2. 保存すると、その部分がLLMによって変換される  
 3. 結果はファイルに直接反映される
-
----
-
-## 🔁 ユースケース：Promptの連鎖処理（Prompt Chain）
-
-TagWritingでは、プロンプトを複数並べるだけで**段階的な生成処理**ができます。
-
-```markdown
-わたしはTagWritingです。
-<prompt>なぜこのプロダクトを作ったか</prompt>
-<prompt>TagWritingの良いところを一行で説明する</prompt>
-```
-
-保存後：
-
-```markdown
-わたしはTagWritingです。
-テキスト生成AIを文章を作成するときに、上手い方法がないか探していたときに思いつきました。
-<prompt>TagWritingの良いところを一行で説明する</prompt>
-```
-
-
-結果：
-
-```markdown
-わたしはTagWritingです。
-テキスト生成AIを文章を作成するときに、上手い方法がないか探していたときに思いつきました。
-TagWritingの良いところは、シームレスな文章との連携です。
-```
 
 ---
 
@@ -105,17 +78,6 @@ BASE_URL=https://api.openai.com/v1
 - `.env` は `tagwriting` コマンドを実行したディレクトリのものが自動的に読み込まれます。
 - 複数プロジェクトで使い分けたい場合は、各ディレクトリごとに `.env` を用意してください。
 - OpenAPI互換なら、とりあえず使えます(Grok、Deepseekなど)
----
-
-## ⚙️ システム構成
-
-### `tagwriting <directory>`
-
-指定した**ディレクトリ**を監視し、保存されたファイルの`<prompt>`タグを探索・処理します。
-
-- LLMや外部APIへのリクエストは非同期で発行
-- エラーや作業状況はCLIにリアルタイム出力
-- 更新はファイルに直接反映（再保存で再処理）
 
 ---
 
@@ -131,6 +93,12 @@ TagWritingは現在、試験的に開発中です。
 ---
 
 # 詳細
+
+**Note**: 
+現在はREADMEを書き直し、`Get Start Guide`に詳細情報を集約しています。あわせて御覧ください。
+
+- [Get Start Guide](https://github.com/esehara/TagWriting/blob/main/docs/getstart.md)
+
 
 ## 挙動の仕様
 
