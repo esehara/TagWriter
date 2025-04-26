@@ -112,3 +112,6 @@ config:
   # url strip
   #   -> URL展開時に空白を消す
   url_strip: false
+  # url simple text
+  #   -> URL展開時にシンプルなテキストにする
+  url_simple_text: false

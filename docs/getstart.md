@@ -482,11 +482,11 @@ LLMは、確かに賢いとはいえ、限界があります。LLMには「カ�
 
 ### 4.1.3 URLタグ
 
-とはいえ、Wikipediaの記事を参照するだけでなく、外部のURLを参照することもできます。これは`URL`タグで行います。
+とはいえ、Wikipediaの記事を参照するだけでなく、外部のURLを参照することもできます。これは`url`タグで行います。
 
 ```markdown
 <chat>
-  <URL>https://example.com</URL>
+  <url>https://example.com</url>
   上の内容を日本語訳して
 </chat>
 ```

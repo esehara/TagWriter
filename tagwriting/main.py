@@ -14,6 +14,7 @@ from rich import print
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from bs4 import BeautifulSoup
+from markdownify import markdownify
 import importlib.metadata
 
 DEFAULT_SYSTEM_PROMPT = """
@@ -249,9 +250,8 @@ class TextManager:
                 verbose_print(f"[green][Result] URL Response: {response}[/green]")
                 response.encoding = response.apparent_encoding
                 if response.status_code == 200:
-                    verbose_print(f"[green][Process] Converting HTML to Text[/green]")
                     html_text, title = HTMLClient.html_to_text(
-                        response.text, self.templates["config"]["url_strip"])
+                        response.text, self.templates["config"]["url_strip"], simple_text=True)
                     if self.templates["config"]["url_source"]:
                        html_text += f"\n\nSource URL: [{title}]({url})"
                     self.url_catch[url] = html_text
@@ -262,7 +262,7 @@ class TextManager:
         try:
             return re.sub(pattern, replacer, text, flags=re.DOTALL)
         except Exception as e:
-            print(f"[url error: {e}]")
+            print(f"[red][Error] Replace Include Tags Error: {e}[/red]")
             return text
 
     @classmethod
@@ -632,6 +632,11 @@ class ConsoleClient:
         if "url_strip" not in templates["config"]:
             templates["config"]["url_strip"] = False
 
+        #   url_simple_text: when html to text, use simple text
+        #     -> default: False
+        if "url_simple_text" not in templates["config"]:
+            templates["config"]["url_simple_text"] = False
+
         # selfpath:
         #   -> for hot reload yaml file.
         templates["selfpath"] = None
@@ -939,7 +944,7 @@ class HTMLClient:
         return soup.title.string
 
     @classmethod
-    def html_to_text(cls, html_text, url_strip) -> (str, str):
+    def html_to_text(cls, html_text, url_strip, simple_text) -> (str, str):
         """
         Args:
             html_text (str): HTML text
@@ -948,11 +953,16 @@ class HTMLClient:
         """
         soup = BeautifulSoup(html_text, 'html.parser')
         target = soup.find('main')
-        if target:
-            return target.get_text(strip=url_strip), soup.title.string
+        if simple_text:
+            if target:
+                return target.get_text(strip=url_strip), soup.title.string
+            else:
+                return soup.get_text(strip=url_strip), soup.title.string
         else:
-            return soup.get_text(strip=url_strip), soup.title.string
-
+            markdown = markdownify(html_text)
+            verbose_print(f"[green][Process] HTML to markdown:[/green]")
+            verbose_print(f"[white][Info] Markdown: {markdown}[/white]")
+            return markdown, soup.title.string
 
 
 @click.command()
