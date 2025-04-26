@@ -218,18 +218,25 @@ class TextManager:
         <url>https://example.com</url> の形式で記述されたタグを、
         指定URLから取得したテキストデータで置換する。
 
-        url tagがerrorを起こした場合:
+        Refer:
+          Config:
+            - url_source: URLのテキストデータを取得する際に、元のURLを付随するかどうか
+
+        Memo:
+
+          url tagがerrorを起こした場合:
           - 置換は行わず、元のテキストをそのまま返す
           - エラーはコンソールに出力
-        Reason:
-          URLはファイルオープンに比べて不確定要素が多すぎるので、
-          エラーが起きたとしても処理が続行できるように柔軟性を持たせる。
-        
-        Catch機能も入れておく:
-          - キャッシュで取得済みのURLは再取得せず、キャッシュを返す
-        Reason:
-          - テキストは何度も短期間で変換されるため、そのたびにURLを取得する必要はない。
-          - URL先のテキストは、ローカルテキストの場合に比べて、より頻繁に変換される可能性は低い。
+         
+          Reason:
+            URLはファイルオープンに比べて不確定要素が多すぎるので、
+            エラーが起きたとしても処理が続行できるように柔軟性を持たせる。
+
+          キャッシュで取得済みのURLは再取得せず、キャッシュを返す
+           
+          Reason:
+           - テキストは何度も短期間で変換されるため、そのたびにURLを取得する必要はない。
+           - URL先のテキストは、ローカルテキストの場合に比べて、より頻繁に変換される可能性は低い。
         """
         pattern = r'<url>(.*?)</url>'
         def replacer(match):
@@ -242,10 +249,10 @@ class TextManager:
                 verbose_print(f"[green][Result] URL Response: {response}[/green]")
                 response.encoding = response.apparent_encoding
                 if response.status_code == 200:
-                    # HTML -> BeautifulSoup -> Text
                     verbose_print(f"[green][Process] Converting HTML to Text[/green]")
                     html_text, title = HTMLClient.html_to_text(response.text)
-                    html_text = html_text + f"\n\nSource URL: [{title}]({url})"
+                    if self.templates["config"]["url_source"]:
+                       html_text += f"\n\nSource URL: [{title}]({url})"
                     self.url_catch[url] = html_text
                     return html_text
                 else:
@@ -615,6 +622,10 @@ class ConsoleClient:
         #     -> default: False
         if "verbose_print" not in templates["config"]:
             templates["config"]["verbose_print"] = False
+        #   url_source: url resource
+        #     -> default: True
+        if "url_source" not in templates["config"]:
+            templates["config"]["url_source"] = True
 
         # selfpath:
         #   -> for hot reload yaml file.

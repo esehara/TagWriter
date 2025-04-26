@@ -106,3 +106,6 @@ config:
   # verbose print
   # -> 詳細な出力をする
   verbose_print: true
+  # url source
+  #   -> URL展開時にソースURLを付随させる
+  url_source: true
