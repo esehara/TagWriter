@@ -109,3 +109,6 @@ config:
   # url source
   #   -> URL展開時にソースURLを付随させる
   url_source: true
+  # url strip
+  #   -> URL展開時に空白を消す
+  url_strip: false

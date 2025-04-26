@@ -250,7 +250,8 @@ class TextManager:
                 response.encoding = response.apparent_encoding
                 if response.status_code == 200:
                     verbose_print(f"[green][Process] Converting HTML to Text[/green]")
-                    html_text, title = HTMLClient.html_to_text(response.text)
+                    html_text, title = HTMLClient.html_to_text(
+                        response.text, self.templates["config"]["url_strip"])
                     if self.templates["config"]["url_source"]:
                        html_text += f"\n\nSource URL: [{title}]({url})"
                     self.url_catch[url] = html_text
@@ -626,6 +627,10 @@ class ConsoleClient:
         #     -> default: True
         if "url_source" not in templates["config"]:
             templates["config"]["url_source"] = True
+        #   url_strip: when html to text, delete whitespace
+        #     -> default: False
+        if "url_strip" not in templates["config"]:
+            templates["config"]["url_strip"] = False
 
         # selfpath:
         #   -> for hot reload yaml file.
@@ -934,7 +939,7 @@ class HTMLClient:
         return soup.title.string
 
     @classmethod
-    def html_to_text(cls, html_text) -> (str, str):
+    def html_to_text(cls, html_text, url_strip) -> (str, str):
         """
         Args:
             html_text (str): HTML text
@@ -944,9 +949,9 @@ class HTMLClient:
         soup = BeautifulSoup(html_text, 'html.parser')
         target = soup.find('main')
         if target:
-            return target.get_text(), soup.title.string
+            return target.get_text(strip=url_strip), soup.title.string
         else:
-            return soup.get_text(), soup.title.string
+            return soup.get_text(strip=url_strip), soup.title.string
 
 
 

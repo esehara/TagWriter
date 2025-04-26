@@ -245,7 +245,7 @@ def test_html_to_text_main_exists():
     html = """
     <html><head><title>Test</title></head><body><main>メインのテキスト</main><footer>フッター</footer></body></html>
     """
-    result = HTMLClient.html_to_text(html)
+    result, _ = HTMLClient.html_to_text(html, url_strip=False)
     assert "メインのテキスト" in result
     assert "フッター" not in result
 
@@ -253,6 +253,6 @@ def test_html_to_text_main_not_exists():
     html = """
     <html><head><title>Test</title></head><body><div>全体テキスト</div><footer>フッター</footer></body></html>
     """
-    result = HTMLClient.html_to_text(html)
+    result, _ = HTMLClient.html_to_text(html, url_strip=False)
     assert "全体テキスト" in result
     assert "フッター" in result
