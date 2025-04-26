@@ -244,7 +244,8 @@ class TextManager:
                 if response.status_code == 200:
                     # HTML -> BeautifulSoup -> Text
                     verbose_print(f"[green][Process] Converting HTML to Text[/green]")
-                    html_text = HTMLClient.html_to_text(response.text)
+                    html_text, title = HTMLClient.html_to_text(response.text)
+                    html_text = html_text + f"\n\nSource URL: [{title}]({url})"
                     self.url_catch[url] = html_text
                     return html_text
                 else:
@@ -922,13 +923,19 @@ class HTMLClient:
         return soup.title.string
 
     @classmethod
-    def html_to_text(cls, html_text):
+    def html_to_text(cls, html_text) -> (str, str):
+        """
+        Args:
+            html_text (str): HTML text
+        Returns:
+            -> (str, str): (HTML inner text, title)
+        """
         soup = BeautifulSoup(html_text, 'html.parser')
         target = soup.find('main')
         if target:
-            return target.get_text()
+            return target.get_text(), soup.title.string
         else:
-            return soup.get_text()
+            return soup.get_text(), soup.title.string
 
 
 

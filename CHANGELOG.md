@@ -3,7 +3,7 @@
 ## 0.3.x
 
 ### 0.3.3 [WIP]
- - **[WIP]**Documentの全面的な書き直し
+ - **[WIP]** Documentの全面的な書き直し
    - READMEにだらっと書いていたのを修正する
 
 ### 0.3.2
@@ -11,10 +11,12 @@
    - この変更に従い、documentを修正する
    - この変更に従い、DEFAULT_PROMPTを、DEFAULT_SYSTEM_PROMPTとDEFAULT_USER_PROMPTに分ける
    - この変更に従い、sample.yamlを修正する
- - **0.3.2.1 [WIP]** URL展開時に空白を消す`url_strp`を追加する
- - **0.3.2.2 [WIP]** URL展開時にソースURLを付随させる
- - **0.3.2.3 [WIP]** history fileが指定されていないときはhistoryを書き込まない 
- - **0.3.2.4 [WIP]** もう少しInner tagの処理を綺麗にする
+ - **0.3.2.1** カスタムタグが機能しなくなっていたのを修正
+ - **0.3.2.2 [WIP]** URL展開時に空白を消す`url_strp`を追加する
+ - **0.3.2.3 [WIP]** URL展開時にソースURLを付随させる
+   - URL展開時にソースURLを付随させない`url_resource`というオプションを提供する
+ - **0.3.2.4 [WIP]** history fileが指定されていないときはhistoryを書き込まない 
+ - **0.3.2.5 [WIP]** もう少しInner tagの処理を綺麗にする
 
 ### 0.3.1
  - BeautifulSoupを入れたので、URLタグの実装
