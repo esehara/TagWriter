@@ -487,6 +487,9 @@ class TextManager:
         # ファイル名決定
         base = os.path.splitext(os.path.basename(self.filepath))[0]
         file_tmpl = history_conf.get('file', '{filename}.history.md')
+        if file_tmpl is None or file_tmpl == "":
+            verbose_print("[green][Process] History file template is not specified. Skipping history save.[/green]")
+            return
         filename = file_tmpl.format(filename=base)
         filename = os.path.join(os.path.dirname(self.filepath), filename)
 

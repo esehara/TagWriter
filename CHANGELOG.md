@@ -2,9 +2,13 @@
 
 ## 0.3.x
 
-### 0.3.3 [WIP]
+### 0.3.4 [WIP]
  - **[WIP]** Documentの全面的な書き直し
    - READMEにだらっと書いていたのを修正する
+
+### 0.3.3 
+  - **[WIP]** `include`の挙動を`source`型に変更する`include_source`の実装
+  - **[WIP]** （可能なら）循環ファイルの`include`の検出システムを搭載し、`deep_include`のオプションを追加する
 
 ### 0.3.2
   - LLMに投げる前のPromptを`system`部分と`user`部分に分ける
