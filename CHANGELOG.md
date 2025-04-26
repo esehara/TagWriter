@@ -7,11 +7,12 @@
    - READMEにだらっと書いていたのを修正する
 
 ### 0.3.3 
-  - **[WIP]** `include`の挙動を`source`型に変更する`include_source`の実装
-  - **[WIP]** （可能なら）循環ファイルの`include`の検出システムを搭載し、`deep_include`のオプションを追加する
+  - **[WIP]** `include`の挙動を`source`追記型に変更する`include_source`の実装
+    - **[WIP]** 再帰的なincludeの実装 -> ファイルを読み込みメソッド`recursive_include`を別途実装する
+    - **[WIP]** （可能なら）循環ファイルの`include`の検出システムを搭載し、`deep_include`のオプションを追加する
 
 ### 0.3.2
-  - LLMに投げる前のPromptを`system`部分と`user`部分に分ける
+  - **0.3.2.0** LLMに投げる前のPromptを`system`部分と`user`部分に分ける
    - この変更に従い、documentを修正する
    - この変更に従い、DEFAULT_PROMPTを、DEFAULT_SYSTEM_PROMPTとDEFAULT_USER_PROMPTに分ける
    - この変更に従い、sample.yamlを修正する
@@ -21,8 +22,10 @@
  - **0.3.2.3** URL展開時に空白を消す`url_strp`を追加する
  - **0.3.2.4** `markdownify`を採用する
    - それに伴い、`url_simple_text`のオプションを追加する
- - **0.3.2.5 [WIP]** そろそろリファクタリングしませんか？
- - **0.3.2.6 [WIP]** history fileが指定されていないときはhistoryを書き込まない 
+ - **0.3.2.5** そろそろリファクタリングしませんか？
+ - **0.3.2.6** history fileが指定されていないときはhistoryを書き込まない 
+   - 指定されていないとは、具体的には""及びnullのこと
+   - 指定されていない場合は、`warning`を出力する `history_warning`オプションも追加
  - **0.3.2.7 [WIP]** 安全性のために、`include`先のファイルがテキストかどうかを確認する
    - FileChangeHandlerで行っている`is_text_file`をユーティリティ化し、他で使えるようにする
    - その後、`replace_include_tags`で使用する
