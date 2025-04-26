@@ -1,3 +1,5 @@
+from rich import print
+
 verbose = False
 
 def verbose_print(msg):

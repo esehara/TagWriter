@@ -42,7 +42,8 @@ attrs:
   academic: "学術的な記述で出力する"
 
 history:
-  file: "./{filename}.history.md"
+  # null or "" とすることで、historyは記録されない
+  file: null
   template: |
     ---
     **Prompt**: 
@@ -103,6 +104,9 @@ config:
   # hot reload yaml
   # -> 自身の設定ファイルの変更を検知し、変更があった場合はhot reloadする
   hot_reload_yaml: true
+  # history warning
+  # -> historyの設定が記録されない設定の場合、warningを出力する
+  history_warning: true
   # verbose print
   # -> 詳細な出力をする
   verbose_print: true

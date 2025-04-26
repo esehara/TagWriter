@@ -96,11 +96,14 @@ class ConfigBuilder:
         #     -> default: False
         if "url_strip" not in templates["config"]:
             templates["config"]["url_strip"] = False
-
         #   url_simple_text: when html to text, use simple text
         #     -> default: False
         if "url_simple_text" not in templates["config"]:
             templates["config"]["url_simple_text"] = False
+        #   history_warning: when history is not specified, warning
+        #     -> default: True
+        if "history_warning" not in templates["config"]:
+            templates["config"]["history_warning"] = True
 
         # selfpath:
         #   -> for hot reload yaml file.

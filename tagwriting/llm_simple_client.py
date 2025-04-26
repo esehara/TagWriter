@@ -1,5 +1,6 @@
 import os
 import requests
+from rich import print
 from pathlib import Path
 from dotenv import load_dotenv
 from tagwriting.html_client import HTMLClient

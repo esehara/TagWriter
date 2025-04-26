@@ -488,7 +488,9 @@ class TextManager:
         base = os.path.splitext(os.path.basename(self.filepath))[0]
         file_tmpl = history_conf.get('file', '{filename}.history.md')
         if file_tmpl is None or file_tmpl == "":
-            verbose_print("[green][Process] History file template is not specified. Skipping history save.[/green]")
+            if self.templates["config"].get('history_warning', True):
+                print("[yellow][Warning] History file template is not set. Skipping history save.[/yellow]")
+            verbose_print("[green][Process] History file template is not set. Skipping history save.[/green]")
             return
         filename = file_tmpl.format(filename=base)
         filename = os.path.join(os.path.dirname(self.filepath), filename)
@@ -503,6 +505,7 @@ class TextManager:
         entry = template.format(prompt=prompt, result=result, timestamp=timestamp)
 
         # 追記
+        verbose_print(f"[green][Process] Saving history: {filename}[/green]")
         with open(filename, 'a', encoding='utf-8') as f:
             f.write(entry + '\n')
 
