@@ -17,8 +17,12 @@
  - **0.3.2.3** URL展開時に空白を消す`url_strp`を追加する
  - **0.3.2.4** `markdownify`を採用する
    - それに伴い、`url_simple_text`のオプションを追加する
- - **0.3.2.5 [WIP]** history fileが指定されていないときはhistoryを書き込まない 
- - **0.3.2.6 [WIP]** もう少しInner tagの処理を綺麗にする
+ - **0.3.2.5 [WIP]** そろそろリファクタリングしませんか？
+ - **0.3.2.6 [WIP]** history fileが指定されていないときはhistoryを書き込まない 
+ - **0.3.2.7 [WIP]** 安全性のために、`include`先のファイルがテキストかどうかを確認する
+   - FileChangeHandlerで行っている`is_text_file`をユーティリティ化し、他で使えるようにする
+   - その後、`replace_include_tags`で使用する
+ - **0.3.2.8 [WIP]** もう少しInner tagの処理を綺麗にする
 
 ### 0.3.1
  - BeautifulSoupを入れたので、URLタグの実装

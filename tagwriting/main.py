@@ -1,56 +1,20 @@
-import fnmatch
 import os
 import re
 import time
 import requests
 import datetime
 import subprocess
-from pathlib import Path
 import yaml
 import click
-from dotenv import load_dotenv
 from rich.console import Console
 from rich import print
-from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from bs4 import BeautifulSoup
-from markdownify import markdownify
 import importlib.metadata
-
-DEFAULT_SYSTEM_PROMPT = """
-Your response will replace `@@processing@@` within the context. 
-Please output text consistent with the context's integrity.
-
-Rule:
-- Do not include `@@processing@@` in your response.
-- Answer the UserPrompt directly, without explanations or commentary.
-{attrs_rules}
-"""
-DEFAULT_USER_PROMPT = """
-Wikipedia Resources:
-{wikipedia_resources}
-
-Context:
-{context}
-
-User prompt:
-{prompt}
-"""
-
-DEFAULT_HISTORY_TEMPLATE = """
----
-Prompt: {prompt}
-Result: {result}
-Timestamp: {timestamp}
-
-"""
-
-
-verbose = False
-def verbose_print(msg):
-    global verbose
-    if verbose:
-        print(msg)
+from tagwriting.html_client import HTMLClient
+from tagwriting.llm_simple_client import LLMSimpleClient
+from tagwriting.file_change_handler import FileChangeHandler
+from tagwriting.utils import verbose_print
+from tagwriting.config_builder import ConfigBuilder
 
 
 class TextManager:
@@ -133,7 +97,6 @@ class TextManager:
         # tagをsafeにする
         # tag['change']が設定されていない場合、または
         # tag['change']が"prompt"または"chat"でない場合は、"prompt"にする
-        # 言い換えると、tag['change']は他のtagには変換できない
         # 
         # reason:
         #   -> tagはpromptまたはchatにしないと循環参照が起きる可能性があるため
@@ -566,81 +529,7 @@ class ConsoleClient:
 
     @classmethod
     def build_templates(cls, templates):
-        """ 
-        Setting default templates param
-
-        """
-        if templates is None:
-            templates = {}
-
-        # if None, set default
-        # --> Template Settings
-        if "system_prompt" not in templates:
-            templates["system_prompt"] = DEFAULT_SYSTEM_PROMPT
-        if "user_prompt" not in templates:
-            templates["user_prompt"] = DEFAULT_USER_PROMPT
-        # --> Custom Tag Settings
-        if "tags" not in templates:
-            templates["tags"] = []
-        # --> Watch files
-        if "ignore" not in templates:
-            templates["ignore"] = []
-        templates["default_template_target"] = False
-        if "target" not in templates:
-            templates["target"] = ["*.txt", "*.md", "*.markdown"]
-            templates["default_template_target"] = True
-        templates["ignore"] = [os.path.abspath(p) for p in templates["ignore"]]
-        templates["target"] = [os.path.abspath(p) for p in templates["target"]]     
-        # --> Attributes
-        if "attrs" not in templates:
-            templates["attrs"] = {}
-        # --> History
-        if "history" not in templates:
-            templates["history"] = {
-                "file": "{filename}.history.md", 
-                "template": DEFAULT_HISTORY_TEMPLATE}
-        if "hook" not in templates:
-            templates["hook"] = {}
-
-        # default config
-        if "config" not in templates:
-            templates["config"] = {}
-
-        # config notes:
-        #   duplicate_prompt: duplicate prompt check
-        #     -> default: False
-        if "duplicate_prompt" not in templates["config"]:
-            templates["config"]["duplicate_prompt"] = False
-        #   simple_merge: if `@@processing@@` is in files, replace previous response
-        #     -> default: True
-        if "simple_merge" not in templates["config"]:
-            templates["config"]["simple_merge"] = True
-        #   hot_reload_yaml: if selfpath is not None, hot reload yaml file.
-        #     -> default: False
-        if "hot_reload_yaml" not in templates["config"]:
-            templates["config"]["hot_reload_yaml"] = False
-        #   verbose_print: verbose print
-        #     -> default: False
-        if "verbose_print" not in templates["config"]:
-            templates["config"]["verbose_print"] = False
-        #   url_source: url resource
-        #     -> default: True
-        if "url_source" not in templates["config"]:
-            templates["config"]["url_source"] = True
-        #   url_strip: when html to text, delete whitespace
-        #     -> default: False
-        if "url_strip" not in templates["config"]:
-            templates["config"]["url_strip"] = False
-
-        #   url_simple_text: when html to text, use simple text
-        #     -> default: False
-        if "url_simple_text" not in templates["config"]:
-            templates["config"]["url_simple_text"] = False
-
-        # selfpath:
-        #   -> for hot reload yaml file.
-        templates["selfpath"] = None
-        return templates
+        return ConfigBuilder.build(templates)
 
     def start(self, watch_path, yaml_path):
         """
@@ -697,8 +586,8 @@ class ConsoleClient:
         #
         # [FIXME] 
         #   "global variable change" is dirty method. 
-        global verbose
-        verbose = self.templates["config"]["verbose_print"]
+        import tagwriting.utils
+        tagwriting.utils.verbose = self.templates["config"]["verbose_print"]
 
         # 3. Start main loop
         self.inloop()
@@ -795,174 +684,6 @@ class ConsoleClient:
         except KeyboardInterrupt:
             observer.stop()
         observer.join()
-
-
-class FileChangeHandler(FileSystemEventHandler):
-
-    def __init__(self, dirpath, on_change, templates, debounce_interval=0.5):
-        super().__init__()
-        self.dirpath = os.path.abspath(dirpath)
-        self.on_change = on_change
-        self._last_called = 0
-        self._debounce_interval = debounce_interval
-        self._ignore = templates["ignore"]
-        self._target = templates["target"]
-        self._selfpath = templates["selfpath"]
-
-    @classmethod
-    def match_patterns(cls, path, patterns):
-        """
-        任意のファイルリスト(patterns)にpathがマッチするか判定
-        - patterns: glob, ディレクトリ、絶対パス対応
-        - patternsが空の場合はFalse（is_target/is_ignored側で適宜True/False返す）
-        """
-        path = os.path.abspath(path)
-        for pattern in patterns:
-            if pattern.endswith(os.sep) or pattern.endswith('/') or pattern.endswith('\\'):
-                dir_pattern = os.path.abspath(pattern.rstrip('/\\'))
-                if os.path.commonpath([path, dir_pattern]) == dir_pattern:
-                    return True
-            elif any(char in pattern for char in '*?[]'):
-                if fnmatch.fnmatch(path, pattern) or fnmatch.fnmatch(os.path.basename(path), pattern):
-                    return True
-            else:
-                file_pattern = os.path.abspath(pattern)
-                if path == file_pattern:
-                    return True
-        return False
-
-    def _is_debounce(self):
-        now = time.time()
-        if now - self._last_called > self._debounce_interval:
-            self._last_called = now
-            return True
-
-    def is_ignored(self, path):
-        return self.match_patterns(path, self._ignore)
-
-    def is_target(self, path):
-        if not self._target:
-            return True
-        return self.match_patterns(path, self._target)
-
-    def is_text_file(self, path, blocksize=512):
-        try:
-            with open(path, 'rb') as f:
-                chunk = f.read(blocksize)
-            # NULLバイトが含まれていればバイナリファイルとみなす
-            if b'\0' in chunk:
-                return False
-            # ASCII範囲外のバイトが多すぎる場合もバイナリとみなす
-            text_characters = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)))
-            nontext = chunk.translate(None, text_characters)
-            return float(len(nontext)) / len(chunk) < 0.30 if chunk else False
-        except Exception:
-            return False
-
-    def on_modified(self, event):
-        # 流石に全部のmodifiedを出力するのは冗長なのでコメントアウト
-        # print(f"[white][event]File modified: {event.src_path}[/white]")
-        if self.is_ignored(event.src_path):
-            return
-       # event.src_pathがtemplatesファイルでなく、かつ対象ファイルでない
-        if not self.is_target(event.src_path) and event.src_path != self._selfpath:
-            return
-        if not self.is_text_file(event.src_path):
-            return
-        if not self._is_debounce():
-            return
-        self.on_change(event.src_path)
-
-class LLMSimpleClient:
-    def __init__(self, llm_name = None) -> None:
-        if llm_name:
-            env_filepath = Path.cwd() / f".env.{llm_name}"
-        else:
-            env_filepath = Path.cwd() / ".env"
-        load_dotenv(dotenv_path=env_filepath, override=True)
-        self.api_key = os.getenv("TAGWRITING_API_KEY") or os.getenv("API_KEY")
-        self.base_url = os.getenv("TAGWRITING_BASE_URL") or os.getenv("BASE_URL")
-        self.model = os.getenv("TAGWRITING_MODEL") or os.getenv("MODEL")
-        self.filepath = env_filepath
-
-    def build_headers(self) -> dict:
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-
-    def build_payload(self, system_prompt, user_prompt) -> dict:
-        return {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": system_prompt}, 
-                {"role": "user", "content": user_prompt}
-            ],
-            "timeout": 100
-        }
-
-    def build_url(self, endpoint) -> str:
-        # merge base url and endpoint
-        if not self.base_url.endswith('/'):
-            self.base_url += '/'
-        return self.base_url + endpoint
-    
-    def ask_ai(self, system_prompt, user_prompt):
-        if not self.api_key:
-            raise RuntimeError(f"API_KEY not found in {self.filepath}. ")
-        try:
-            print(f"[green][Process] Post request to {self.build_url('/chat/completions')}[/green]")
-            payload = self.build_payload(system_prompt, user_prompt)
-            verbose_print(f"[white][Info] Request: {payload}[/white]")
-            completion = requests.post(
-                self.build_url("chat/completions"), headers=self.build_headers(), json=payload)
-            data = completion.json()
-            verbose_print(f"[green][Process] Response: {data}[/green]")
-            # response['choices'][0]['message']['citations']
-            response =  data["choices"][0]["message"]["content"]
-            
-            # maybe Perplexity AI only
-            if  "citations" in data:
-                response += "\n\n"
-                response += "Sources: \n\n"
-                citations = data["citations"]
-                for i, citation in enumerate(citations, 1):
-                    title = HTMLClient.get_title(citation)
-                    response += f"{i}. [{title}]({citation})\n"
-            return response
-        except requests.exceptions.JSONDecodeError as e:
-            print(f"[red][bold][Error][/bold] JSONDecodeError:[/red]")
-            print(completion)
-            return None
-
-class HTMLClient:
-    @classmethod
-    def get_title(cls, url):
-        response = requests.get(url, timeout=10)
-        # [TODO] なんか中国語だとバグったのであとで調べる
-        soup = BeautifulSoup(response.text, 'html.parser')
-        return soup.title.string
-
-    @classmethod
-    def html_to_text(cls, html_text, url_strip, simple_text) -> (str, str):
-        """
-        Args:
-            html_text (str): HTML text
-        Returns:
-            -> (str, str): (HTML inner text, title)
-        """
-        soup = BeautifulSoup(html_text, 'html.parser')
-        target = soup.find('main')
-        if simple_text:
-            if target:
-                return target.get_text(strip=url_strip), soup.title.string
-            else:
-                return soup.get_text(strip=url_strip), soup.title.string
-        else:
-            markdown = markdownify(html_text)
-            verbose_print(f"[green][Process] HTML to markdown:[/green]")
-            verbose_print(f"[white][Info] Markdown: {markdown}[/white]")
-            return markdown, soup.title.string
 
 
 @click.command()
