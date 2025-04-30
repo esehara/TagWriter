@@ -390,13 +390,16 @@ class TextManager:
             tag, prompt, attrs, llm_name = result
 
             # Promptが空白文字のみだった場合、self.textをbackup_textに差し戻して終了
-            if prompt.isspace():
+            if prompt == '' or prompt.isspace():
                 # 無限ループになる可能性があるので、タグを消して無限ループに陥らないようにする
                 if result_kind == 'prompt':
                     backup_text = TextManager.safe_text(backup_text, 'prompt')
                 else:
                     backup_text = TextManager.safe_text(backup_text, 'chat')
+                verbose_print("[green][Process][/green] text <- backup text")
                 self.text = backup_text
+                verbose_print("[white][Info][/white]")
+                verbose_print(self.text)
                 self._save_text()
                 print("[yellow][bold][Processs][/bold] Prompt is empty or contains only whitespace. Reverting to backup text.[/yellow]")
                 return None
