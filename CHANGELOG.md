@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## TODO LIST
+ - **[WIP]** 安全性のために、`include`先のファイルがテキストかどうかを確認する
+   - FileChangeHandlerで行っている`is_text_file`をユーティリティ化し、他で使えるようにする
+   - その後、`replace_include_tags`で使用する
+ - **[WIP]** もう少しInner tagの処理を綺麗にする
+
 ## 0.3.x
 
 ### 0.3.4 [WIP]
@@ -26,10 +32,7 @@
  - **0.3.2.6** history fileが指定されていないときはhistoryを書き込まない 
    - 指定されていないとは、具体的には""及びnullのこと
    - 指定されていない場合は、`warning`を出力する `history_warning`オプションも追加
- - **0.3.2.7 [WIP]** 安全性のために、`include`先のファイルがテキストかどうかを確認する
-   - FileChangeHandlerで行っている`is_text_file`をユーティリティ化し、他で使えるようにする
-   - その後、`replace_include_tags`で使用する
- - **0.3.2.8 [WIP]** もう少しInner tagの処理を綺麗にする
+ - **0.3.2.7** promptが空白だけの場合には、処理を差し戻して終了。
 
 ### 0.3.1
  - BeautifulSoupを入れたので、URLタグの実装
